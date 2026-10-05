@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 import icons from '@/lib/icon-data';
 
 /* ---------- Icon ---------- */
@@ -189,9 +190,9 @@ export function NavBar({ items = [], brand }: { items?: NavItemData[]; brand?: {
     <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 10, fontFamily: 'var(--font-sans)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         {brand && (
-          <a href={brand.href || '#top'} aria-label={brand.label || 'Home'} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: 'var(--muted)', textDecoration: 'none' }}>
+          <Link href={brand.href || '/'} aria-label={brand.label || 'Home'} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: 'var(--muted)', textDecoration: 'none' }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--clay)' }} />
-          </a>
+          </Link>
         )}
         {items.map((it) => <NavItem key={it.label} {...it} />)}
       </div>
@@ -202,7 +203,7 @@ export function NavBar({ items = [], brand }: { items?: NavItemData[]; brand?: {
 function NavItem({ hint, label, href = '#', active }: NavItemData) {
   const [h, setH] = useState(false);
   return (
-    <a
+    <Link
       href={href} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} aria-current={active ? 'page' : undefined}
       style={{
         display: 'inline-flex', gap: 6, padding: '4px 8px', borderRadius: 6, background: h || active ? 'var(--clay-wash)' : 'var(--muted)',
@@ -212,6 +213,6 @@ function NavItem({ hint, label, href = '#', active }: NavItemData) {
     >
       {hint && <span style={{ color: h || active ? 'var(--clay)' : 'var(--muted-foreground)' }}>[{hint}]</span>}
       {label}
-    </a>
+    </Link>
   );
 }

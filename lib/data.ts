@@ -94,13 +94,13 @@ export const ROLES: Role[] = [
 ];
 
 export const CASES: string[][] = [
-  ["Berribot: Production AI Systems","","AI Engineer","Took over how candidates get matched to jobs, building the search, ranking, and testing behind it.","https://files.thrn.im/pdfs/berribot_ecs.pdf"],
-  ["Hyr: Connected AI Hiring System","","Founding Engineer","Built the AI behind a recruiting platform, from understanding candidates to running interviews.","https://files.thrn.im/pdfs/hyr_ecs.pdf"],
-  ["Pocketlink: Creator Commerce AI","","Co-founder & Full-Stack Engineer","Built a platform where creators make their own page and sell their work, from the editor to the store.","https://files.thrn.im/pdfs/pocketlink_ecs.pdf"],
-  ["RK&GT: Document Intelligence ML","","Machine Learning Engineer Intern","Worked on two machine learning projects, one that tracks tagged items around an office and one that helps software search through documents.","https://files.thrn.im/pdfs/rkgt_ecs.pdf"],
-  ["Tekkscope: AI Research Platform","","Full-Stack AI Engineer","Built an AI research assistant that searches the web, reads the sources, and streams back answers, switching to a backup model if one goes down.","https://files.thrn.im/pdfs/tekkscope_ecs.pdf"],
-  ["ThirdSlate: Course-Grounded RAG","","Co-founder & AI Engineer","Built an AI study platform that answers from a student's own course material, with a check on every answer and a human review for the shaky ones.","https://files.thrn.im/pdfs/thirdslate_ecs.pdf"],
-  ["Tracebox: WebRTC Agent Test Lab","","Full-Stack AI Engineer","Built a tool that tests voice AI agents by talking to them in a real browser, then saves everything so problems are easy to trace.","https://files.thrn.im/pdfs/tracebox_ecs.pdf"]
+  ["Berribot: Production AI Systems","","AI Engineer","Took over how candidates get matched to jobs, building the search, ranking, and testing behind it.","/case-studies/berribot"],
+  ["Hyr: Connected AI Hiring System","","Founding Engineer","Built the AI behind a recruiting platform, from understanding candidates to running interviews.","/case-studies/hyr"],
+  ["Pocketlink: Creator Commerce AI","","Co-founder & Full-Stack Engineer","Built a platform where creators make their own page and sell their work, from the editor to the store.","/case-studies/pocketlink"],
+  ["RK&GT: Document Intelligence ML","","Machine Learning Engineer Intern","Worked on two machine learning projects, one that tracks tagged items around an office and one that helps software search through documents.","/case-studies/rkgt"],
+  ["Tekkscope: AI Research Platform","","Full-Stack AI Engineer","Built an AI research assistant that searches the web, reads the sources, and streams back answers, switching to a backup model if one goes down.","/case-studies/tekkscope"],
+  ["ThirdSlate: Course-Grounded RAG","","Co-founder & AI Engineer","Built an AI study platform that answers from a student's own course material, with a check on every answer and a human review for the shaky ones.","/case-studies/thirdslate"],
+  ["Tracebox: WebRTC Agent Test Lab","","Full-Stack AI Engineer","Built a tool that tests voice AI agents by talking to them in a real browser, then saves everything so problems are easy to trace.","/case-studies/tracebox"]
 ];
 
 export const ANSWERS: Record<string, string> = {

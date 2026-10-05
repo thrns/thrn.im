@@ -78,7 +78,7 @@ a:hover{background:var(--clay-wash);text-decoration-color:var(--clay)}
   --focus-ring:0 0 0 3px var(--ring);--focus-ring-error:0 0 0 3px var(--ring-error);
   --hairline:inset 0 0 0 1px var(--border);
   /* portfolio layout (added): 900px column mirrors the reference site's content width */
-  --content-width:900px;--measure:640px;--page-gutter:24px;--section-gap:var(--space-6xl);
+  --content-width:900px;--measure:640px;--page-gutter:24px;--header-height:48px;--section-gap:var(--space-6xl);
   /* motion (added; restrained) */
   --ease:cubic-bezier(.2,.7,.2,1); /* @kind other */
   --dur-fast:120ms; /* @kind other */ --dur:200ms; /* @kind other */ --dur-slow:400ms; /* @kind other */
@@ -99,7 +99,7 @@ a:hover{background:var(--clay-wash);text-decoration-color:var(--clay)}
 }
 @media (min-width:641px){[data-r=mpanel]{display:none!important}}
 @media (max-width:640px){
-:root{--page-gutter:16px;--space-6xl:48px;--space-3xl:32px}
+:root{--page-gutter:16px;--space-3xl:32px}
 .h1{font-size:32px!important;line-height:38px!important}
 [data-r=hdr]{flex-wrap:nowrap!important;gap:8px!important}
 [data-r=hdr]>nav{flex:none!important;padding:8px 0!important}
@@ -119,6 +119,12 @@ a:hover{background:var(--clay-wash);text-decoration-color:var(--clay)}
 }
 @media (max-width:380px){[data-r=sugs]>button[aria-label]:not([aria-label=More])>span:first-child{display:none!important}}
 
+html:not([data-nav=c]) [data-r=mpanel]{display:none!important}
+html[data-nav=c] [data-r=hdr]{flex-wrap:nowrap!important;gap:8px!important}
+html[data-nav=c] [data-r=hdr]>nav{flex:none!important;padding:8px 0!important}
+html[data-nav=c] [data-r=hdr] nav a:not(:first-child){display:none!important}
+html[data-nav=c] [data-r=mbtn]{display:inline-flex!important}
+html[data-nav=c] [data-r=acts]{flex:1 1 auto!important;justify-content:flex-end}
 @keyframes ds-spin{to{transform:rotate(360deg)}}
 /* Hover states (the original used per-element hover props) */
 html.pf-cc, html.pf-cc *{cursor:none!important}
@@ -127,3 +133,8 @@ html.pf-cc, html.pf-cc *{cursor:none!important}
 .toggle-q:hover{color:var(--foreground)!important}
 [data-r=sugs]>button:hover{background:color-mix(in srgb, var(--foreground) 5%, var(--card))!important}
 .send-btn:hover{opacity:.9!important}
+/* shared chrome rules */
+[data-copy] button{transition:background-color 120ms cubic-bezier(.2,.7,.2,1)!important}[data-copy] button:hover{background-color:var(--clay-wash)!important}[data-r=hdr] nav a>span,[data-r=acts] kbd,[data-r=kbd] *{border-radius:0!important}[data-r=hdr] nav a[aria-label]{transition:background-color 120ms cubic-bezier(.2,.7,.2,1)!important}[data-r=hdr] nav a[aria-label]:hover{background-color:var(--clay-wash)!important}[data-tip]{position:relative}[data-tip]::after{content:attr(data-tip);position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%);padding:4px 8px;background:var(--foreground);color:var(--background);font-size:12px;line-height:16px;letter-spacing:-.011em;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 120ms;z-index:70}[data-tip]:hover::after,[data-tip]:focus-within::after{opacity:1}[data-r=acts] button:hover,aside>div:first-child button:hover,button[aria-label="Close info"]:hover{background-color:var(--clay-wash)!important}
+
+/* page reset (body margin was missing) */
+html,body{height:100%;margin:0}
