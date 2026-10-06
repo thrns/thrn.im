@@ -61,7 +61,7 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
     };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(EMAIL).then(done, fb); else fb();
   };
-  const saveCur = (p: Partial<State>) => {
+  const saveCur = (p: Partial<ChromeState>) => {
     const n = { ...sRef.current, ...p };
     setState(p);
     localStorage.setItem('pf-cursor', JSON.stringify({ on: n.curOn, shape: n.curShape, mo: n.mo }));
