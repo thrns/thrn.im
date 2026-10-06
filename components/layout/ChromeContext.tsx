@@ -1,25 +1,24 @@
 'use client';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ANSWERS, GREETING, TOPICS } from '@/lib/data';
 import { DEFAULT_MO, EMAIL, NAV, PATH, SHAPES, activeOf } from '@/lib/chrome';
 
 export type ChromeState = {
-  email: boolean; copied: boolean; moreOpen: boolean; guide: boolean; info: boolean; typed: number; hideQ: boolean; chat: boolean; dark: boolean;
-  curOpen: boolean; curOn: boolean; curShape: string; mo: Record<string, boolean>; msgs: { text: string; align: string }[]; draft: string; busy: boolean; menu: boolean;
+  email: boolean; copied: boolean; moreOpen: boolean; guide: boolean; info: boolean; chat: boolean; dark: boolean;
+  curOpen: boolean; curOn: boolean; curShape: string; mo: Record<string, boolean>; menu: boolean;
 };
 const INIT: ChromeState = {
-  email: false, copied: false, moreOpen: false, guide: false, info: false, typed: 0, hideQ: false, chat: false, dark: false, curOpen: false, curOn: true,
-  curShape: 'circle', mo: { ...DEFAULT_MO }, msgs: [], draft: '', busy: false, menu: false,
+  email: false, copied: false, moreOpen: false, guide: false, info: false, chat: false, dark: false, curOpen: false, curOn: true,
+  curShape: 'circle', mo: { ...DEFAULT_MO }, menu: false,
 };
 
 type Setter = (p: Partial<ChromeState> | ((s: ChromeState) => Partial<ChromeState>)) => void;
 export type Chrome = {
   s: ChromeState; sRef: React.MutableRefObject<ChromeState>; setState: Setter;
-  setDark: (d: boolean) => void; copyAddr: () => void; saveCur: (p: Partial<ChromeState>) => void; send: (text: string) => void;
+  setDark: (d: boolean) => void; copyAddr: () => void; saveCur: (p: Partial<ChromeState>) => void;
   openChat: (e?: React.SyntheticEvent) => void; closeChat: () => void; openEmail: (e?: React.SyntheticEvent) => void;
   closeEmail: () => void; closeInfo: () => void; closeGuide: () => void;
-  endRef: React.RefObject<HTMLDivElement | null>; greeting: string; active: string;
+  active: string;
   navItems: { hint: string; label: string; href: string; active: boolean }[];
 };
 
@@ -31,8 +30,7 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
   const sRef = useRef(s);
   sRef.current = s;
   const setState: Setter = (p) => _set((prev) => ({ ...prev, ...(typeof p === 'function' ? p(prev) : p) }));
-  const endRef = useRef<HTMLDivElement>(null);
-  const t = useRef<{ copy?: any; typer?: any; reply?: any }>({});
+  const t = useRef<{ copy?: ReturnType<typeof setTimeout> }>({});
   const api = useRef<any>({});
   const router = useRouter();
   const pathname = usePathname();
@@ -65,28 +63,6 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
     const n = { ...sRef.current, ...p };
     setState(p);
     localStorage.setItem('pf-cursor', JSON.stringify({ on: n.curOn, shape: n.curShape, mo: n.mo }));
-  };
-  const reply = (q: string) => {
-    if (ANSWERS[q]) return ANSWERS[q];
-    const tp = TOPICS.find(([, re]) => re.test(q));
-    return tp ? ANSWERS[tp[0]] : 'I only know what is on this site. Try asking about my experience, projects or availability.';
-  };
-  const send = (text: string) => {
-    const q = (typeof text === 'string' ? text : '').trim();
-    if (!q || sRef.current.busy) return;
-    setState((x) => ({ msgs: [...x.msgs, { text: q, align: 'right' }], draft: '', busy: true }));
-    setTimeout(() => {
-      const full = reply(q);
-      let n = 0;
-      setState((x) => ({ busy: false, msgs: [...x.msgs, { text: '\u258D', align: 'left' }] }));
-      clearInterval(t.current.reply);
-      t.current.reply = setInterval(() => {
-        n += 1;
-        const done = n >= full.length;
-        setState((x) => { const m = x.msgs.slice(); m[m.length - 1] = { ...m[m.length - 1], text: full.slice(0, n) + (done ? '' : '\u258D') }; return { msgs: m }; });
-        if (done) clearInterval(t.current.reply);
-      }, 22);
-    }, 700);
   };
   api.current = { setDark, copyAddr, saveCur };
 
@@ -153,7 +129,7 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
 
     return () => {
-      clearInterval(t.current.reply); clearInterval(t.current.typer);
+      clearTimeout(t.current.copy);
       fitTimers.forEach(clearTimeout);
       window.removeEventListener('resize', fitNav);
       window.removeEventListener('keydown', key);
@@ -161,25 +137,6 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* greeting typewriter when chat opens */
-  const prevChat = useRef<boolean | undefined>(undefined);
-  useEffect(() => {
-    if (prevChat.current === s.chat) return;
-    prevChat.current = s.chat;
-    clearInterval(t.current.typer);
-    if (s.chat) {
-      let n = 0;
-      setState({ typed: 0 });
-      t.current.typer = setInterval(() => {
-        n += 1;
-        setState({ typed: n });
-        if (n >= GREETING.length) clearInterval(t.current.typer);
-      }, 28);
-    } else setState({ typed: 0 });
-  });
-
-
-  const greeting = GREETING.slice(0, s.typed) + (s.typed < GREETING.length && s.chat ? '\u258D' : '');
   const navItems = NAV.map(([hint, label, id]) => ({ hint, label, href: PATH[id], active: active === id }));
   const openEmail = (e?: React.SyntheticEvent) => { e && e.preventDefault && e.preventDefault(); setState({ email: true, copied: false }); };
   const openChat = (e?: React.SyntheticEvent) => { e && e.preventDefault && e.preventDefault(); setState({ chat: true }); };
@@ -188,6 +145,6 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
   const closeInfo = () => setState({ info: false });
   const closeGuide = () => setState({ guide: false });
 
-  const value: Chrome = { s, sRef, setState, setDark, copyAddr, saveCur, send, openChat, closeChat, openEmail, closeEmail, closeInfo, closeGuide, endRef, greeting, active, navItems };
+  const value: Chrome = { s, sRef, setState, setDark, copyAddr, saveCur, openChat, closeChat, openEmail, closeEmail, closeInfo, closeGuide, active, navItems };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

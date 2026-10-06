@@ -14,11 +14,11 @@ export function InfoDialog() {
     <Modal open={s.info} onClose={closeInfo} zIndex={50} label="About this chat" maxWidth={640} padding="32px 32px 28px" dataR="dlg">
       <ModalHeader
         title="About this chat" titleStyle="font-size:24px;line-height:32px"
-        subtitle="An assistant that answers from this site, and nothing else." subtitleStyle="margin:10px 0 0;max-width:var(--measure)"
+        subtitle="A generative UI assistant that answers from this site, and nothing else." subtitleStyle="margin:10px 0 0;max-width:var(--measure)"
         closeLabel="Close info" onClose={closeInfo}
       />
       <div style={css('margin-top:32px;border-top:1px solid var(--foreground)')}>
-        {([['What it is', 'Ask about my roles, projects, stack or availability. It replies in a few lines.'], ['Why', 'A portfolio is fixed. A recruiter wants experience, an engineer wants the projects. This lets you ask for what you came for.'], ['Limits', 'It only knows what is on this site. If it does not know, it says so.']] as const).map(([k, v]) => (
+        {([['What it is', 'Ask about my roles, projects, case studies, stack or availability. Bixxie builds a small interface around the answer instead of returning a wall of text.'], ['Why', 'A recruiter may want outcomes, an engineer may want architecture, and someone else may want the projects. The response adapts to the question.'], ['Limits', 'It only knows what is published on this site. If something is missing or unclear, it says so.']] as const).map(([k, v]) => (
           <ModalRow key={k} align="start">
             <Tag>{k}</Tag>
             <p className="p light" style={css('margin:0')}>{v}</p>

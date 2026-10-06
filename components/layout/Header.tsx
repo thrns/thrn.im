@@ -21,7 +21,7 @@ export default function Header() {
           >Collection</button>
           <div data-r="acts" style={css('display:flex;align-items:center;gap:8px;position:relative')}>
             <Button variant="outline" size="sm" onClick={openChat}>
-              <span style={css('display:inline-flex;align-items:center;gap:6px')}>Ask AI<span data-r="kbd" style={css('display:inline-flex;gap:2px')}><Kbd>/</Kbd></span></span>
+              <span style={css('display:inline-flex;align-items:center;gap:6px')}>Ask Bixxie<span data-r="kbd" style={css('display:inline-flex;gap:2px')}><Kbd>/</Kbd></span></span>
             </Button>
             <div data-r="more" style={css('position:relative;display:inline-flex')}>
               <IconButton size="sm" aria-label="More" title="More" aria-expanded={s.moreOpen} onClick={() => setState((x) => ({ moreOpen: !x.moreOpen }))}>

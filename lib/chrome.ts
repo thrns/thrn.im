@@ -19,7 +19,7 @@ export const MOMENTS: [string, string, string][] = [
 ];
 
 export const GUIDE_L: [string, string][] = [['Home', 'H'], ['Work', 'W'], ['Projects', 'P'], ['Case studies', 'T'], ['Stack', 'S'], ['Resume', 'R'], ['Cursor on / off', 'O'], ['Cursor shape', 'F'], ['Little moments', 'L']];
-export const GUIDE_R: [string, string][] = [['Ask AI', '/'], ['Email me', 'M'], ['Day / night mode', 'D'], ['Cursor settings', 'C'], ['This guide', '?'], ['Stack: all, active, planned, inactive', 'E U N I'], ['Stack: category', 'G'], ['Copy email address', 'K'], ['Open mail app', 'J'], ['Close a window', 'Esc']];
+export const GUIDE_R: [string, string][] = [['Ask Bixxie', '/'], ['Email me', 'M'], ['Day / night mode', 'D'], ['Cursor settings', 'C'], ['This guide', '?'], ['Stack: all, active, planned, inactive', 'E U N I'], ['Stack: category', 'G'], ['Copy email address', 'K'], ['Open mail app', 'J'], ['Close a window', 'Esc']];
 
 export const SUGS = ['Me', 'Projects', 'Skills', 'Fun', 'Contact', 'More'];
 export const SUG_ICON: Record<string, string> = { Me: 'LucideGraduationCap', Projects: 'LucideBriefcase', Skills: 'LucideLayers', Fun: 'LucideSparkles', Contact: 'LucideMail', More: 'LucideEllipsis' };

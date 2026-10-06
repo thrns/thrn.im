@@ -1,4 +1,20 @@
+import { EMAIL } from './chrome';
+
 // Site content, copied verbatim from the original design.
+export const PROFILE = {
+  fullName: 'Tharun Pranav Sakthivel',
+  displayName: 'TP',
+  tagline: 'Build a compass to wander.',
+  studyIntro: "Hi there! I'm TP, an AI engineer in my last year at UBC, studying Physics, Statistics, and Environmental Sciences.",
+  recentWork: 'Most recently, I was an AI Engineer at Berribot, where I built and ran the system that matches candidates to job descriptions and ranks them for recruiters.',
+  thirdSlatePocketlink: 'Before that, I co-founded ThirdSlate, a platform that helps people learn more efficiently, and Pocketlink, where creators can publish, sell, and grow their work all in one place.',
+  hyrAgroBot: 'I also worked as a Technical Consultant at Hyr and as an AI Engineer at UBC AgroBot, where I got to use AI on agriculture problems.',
+  research: "These days I'm deep in the research side of AI, exploring it and building as I go.",
+  pastInterests: 'In a past life, I was into electronics and circuitry, and I spent a lot of time on debate and athletics.',
+  workLink: 'You can learn more about my work here.',
+  email: EMAIL,
+} as const;
+
 export const PROJECTS: { name: string; what: string; status: string; url: string }[] = [
   { name: "RepoView", what: "Building a way to share a private GitHub project with a recruiter or investor without making the code public, and see how they actually go through it.", status: 'Working', url: 'https://repoview.thrn.im/' },
   { name: "OutKey", what: "Building a way for apps to issue signed credentials that can't be faked or reused, so every action has a clear record of who approved it. Open source.", status: 'Working', url: 'https://github.com/thrns/Outkey' },
@@ -102,21 +118,3 @@ export const CASES: string[][] = [
   ["ThirdSlate: Course-Grounded RAG","","Co-founder & AI Engineer","Built an AI study platform that answers from a student's own course material, with a check on every answer and a human review for the shaky ones.","/case-studies/thirdslate"],
   ["Tracebox: WebRTC Agent Test Lab","","Full-Stack AI Engineer","Built a tool that tests voice AI agents by talking to them in a real browser, then saves everything so problems are easy to trace.","/case-studies/tracebox"]
 ];
-
-export const ANSWERS: Record<string, string> = {
-  'Me': 'I am Tharun Pranav Sakthivel, an AI engineer. I am an AI engineer at Berribot, and have co-founded ThirdSlate, Pocketlink and Allotrix. Earlier I worked on vision models at UBC AgroBot.',
-  'Projects': 'Ten are listed under Projects, newest first: RepoView, OutKey, OutPost and OutPay are in progress. Earlier ones include TinyShell, TraceBox, TekkScope and CovidScan.',
-  'Skills': 'Python, pgvector, FastAPI, Kafka, Postgres and AWS. Day to day I work on agents, retrieval and evals.',
-  'Fun': 'I care about boring reliability more than demos. Outside work I tinker with voice tools and try every new terminal.',
-  'More': 'Ask me about my stack, past roles or availability.',
-  'Contact': 'Email is the fastest way to reach me. I am open to AI engineering roles.'
-  };
-
-export const TOPICS: [string, RegExp][] = [
-  ['Projects', /project|built|build|ship|repo|outkey|outpost|outpay|tinyshell|tracebox|tekkscope|covidscan/i],
-  ['Skills', /skill|stack|tech|python|tool|language|framework|know|aws|postgres/i],
-  ['Contact', /contact|email|mail|reach|hire|hiring|available|availability|open to|work with|connect/i],
-  ['Fun', /fun|hobb|outside|free time|interest|like to/i],
-  ['Me', /who|about|you\b|yourself|role|experience|background|career|work|job|company|education|intern/i],
-  ['More', /help|what can|more|topic|ask/i]
-  ];
