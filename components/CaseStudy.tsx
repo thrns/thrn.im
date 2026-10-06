@@ -137,7 +137,7 @@ export default function CaseStudy({ slug }: { slug: string }) {
       mm.initialize({
         startOnLoad: false, securityLevel: 'loose', theme: 'base',
         flowchart: { htmlLabels: true, curve: 'linear', padding: 14, nodeSpacing: 30, rankSpacing: 34, wrappingWidth: 500, useMaxWidth: true },
-        themeVariables: { fontFamily: 'Inter, system-ui, sans-serif', fontSize: '13px' },
+        themeVariables: { fontFamily: 'var(--font-sans)', fontSize: '13px' },
         themeCSS: THEME_CSS,
       });
       for (const el of Array.from(document.querySelectorAll<HTMLElement>('[data-mmd]'))) {

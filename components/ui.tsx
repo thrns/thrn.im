@@ -111,7 +111,7 @@ export function Kbd({ children, style, ...rest }: React.HTMLAttributes<HTMLEleme
       {...rest}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '2px 4px', minWidth: 20, borderRadius: 6,
-        background: 'var(--muted)', color: 'var(--muted-foreground)', fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', ...style,
+        background: 'var(--muted)', color: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: '16px', ...style,
       }}
     >
       {children}
@@ -211,7 +211,7 @@ function NavItem({ hint, label, href = '#', active }: NavItemData) {
         letterSpacing: '-.011em', transition: 'background var(--dur-fast) var(--ease)',
       }}
     >
-      {hint && <span style={{ color: h || active ? 'var(--clay)' : 'var(--muted-foreground)' }}>[{hint}]</span>}
+      {hint && <span className="mono" style={{ color: h || active ? 'var(--clay)' : 'var(--muted-foreground)' }}>[{hint}]</span>}
       {label}
     </Link>
   );

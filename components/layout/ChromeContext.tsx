@@ -19,7 +19,7 @@ export type Chrome = {
   setDark: (d: boolean) => void; copyAddr: () => void; saveCur: (p: Partial<ChromeState>) => void; send: (text: string) => void;
   openChat: (e?: React.SyntheticEvent) => void; closeChat: () => void; openEmail: (e?: React.SyntheticEvent) => void;
   closeEmail: () => void; closeInfo: () => void; closeGuide: () => void;
-  endRef: React.RefObject<HTMLDivElement>; greeting: string; active: string;
+  endRef: React.RefObject<HTMLDivElement | null>; greeting: string; active: string;
   navItems: { hint: string; label: string; href: string; active: boolean }[];
 };
 

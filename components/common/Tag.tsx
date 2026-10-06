@@ -9,7 +9,7 @@ const KEY = 'display:inline-flex;align-items:center;justify-content:center;min-w
 export function Tag({ hint, size = 'md', children }: { hint?: string; size?: 'md' | 'sm'; children?: ReactNode }) {
   return (
     <span style={css(size === 'sm' ? TAG_SM : TAG)}>
-      {hint && <span style={css('color:var(--muted-foreground)')}>[{hint}]</span>}
+      {hint && <span className="mono" style={css('color:var(--muted-foreground)')}>[{hint}]</span>}
       {children}
     </span>
   );
@@ -17,5 +17,5 @@ export function Tag({ hint, size = 'md', children }: { hint?: string; size?: 'md
 
 /** Keyboard key label used in the shortcuts guide. */
 export function KeyCap({ children }: { children: ReactNode }) {
-  return <span style={css(KEY)}>{children}</span>;
+  return <span className="mono" style={css(KEY)}>{children}</span>;
 }

@@ -57,7 +57,7 @@ export default function Header() {
             {NAV.map(([hint, label, id]) => (
               <Link key={id} href={PATH[id]} onClick={() => setState({ menu: false })} aria-current={active === id ? 'page' : undefined}
                 style={css(`display:inline-flex;gap:6px;padding:4px 8px;border-radius:0;background:${active === id ? 'var(--clay-wash)' : 'var(--muted)'};color:var(--foreground);text-decoration:none;font-size:14px;line-height:20px;font-weight:${active === id ? 500 : 400};letter-spacing:-.011em`)}>
-                <span style={css('color:var(--muted-foreground)')}>[{hint}]</span>{label}
+                <span className="mono" style={css('color:var(--muted-foreground)')}>[{hint}]</span>{label}
               </Link>
             ))}
           </nav>

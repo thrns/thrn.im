@@ -11,7 +11,7 @@ const PILL_STYLE = 'justify-self:end;display:inline-flex;align-items:center;gap:
 export default function StatusPill({ status, pulse }: { status: string; pulse: boolean }) {
   const c = PILL[status] || PILL_DEFAULT;
   return (
-    <span style={css(`${PILL_STYLE};background:${c.pillBg};color:${c.pillFg}`)}>
+    <span className="mono" style={css(`${PILL_STYLE};background:${c.pillBg};color:${c.pillFg}`)}>
       <span data-anim="1" style={css(`width:6px;height:6px;border-radius:9999px;background:${c.dot};animation:${pulse ? 'pulse 2.2s ease-in-out infinite' : 'none'}`)}></span>
       {status}
     </span>

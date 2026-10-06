@@ -69,7 +69,7 @@ export default function StackPage() {
           <div style={css('position:relative;display:inline-flex')}>
             <button className="chip" type="button" onClick={() => setCatOpen((o) => !o)} aria-expanded={catOpen}
               style={css(`display:inline-flex;gap:6px;align-items:center;padding:4px 8px;border:0;border-radius:0;background:${scat !== 'All' || catOpen ? 'var(--clay-wash)' : 'var(--muted)'};color:var(--foreground);font:inherit;font-size:14px;line-height:20px;letter-spacing:-.011em;cursor:pointer;transition:background-color 120ms var(--ease)`)}>
-              <span style={css('color:var(--muted-foreground)')}>[G]</span>{catLabel}<Icon name="LucideChevronDown" size={14} />
+              <span className="mono" style={css('color:var(--muted-foreground)')}>[G]</span>{catLabel}<Icon name="LucideChevronDown" size={14} />
             </button>
           </div>
           {catOpen && (
