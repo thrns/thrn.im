@@ -20,7 +20,7 @@ export const catalog = defineCatalog(schema, {
         .object({
           label: z.string().max(32).nullable(),
           title: z.string().max(90),
-          intro: z.string().max(360).nullable(),
+          intro: z.string().max(280).nullable(),
         })
         .strict(),
       slots: ["default"],
@@ -41,11 +41,11 @@ export const catalog = defineCatalog(schema, {
     TextBlock: {
       props: z
         .object({
-          text: z.string().max(700),
+          text: z.string().max(260),
           tone: z.enum(["default", "muted"]).nullable(),
         })
         .strict(),
-      description: describe("A short prose block for information that does not fit a structured component."),
+      description: describe("A short prose block (a sentence or two, never a long paragraph) for information that does not fit a structured component. Use several short TextBlocks, a Section, or Facts rows — not one long block — to cover more ground."),
     },
     Metrics: {
       props: z
@@ -78,6 +78,16 @@ export const catalog = defineCatalog(schema, {
         .strict(),
       description: describe(
         "References canonical app-owned role data by company. Do not recreate, rewrite, or invent role details.",
+      ),
+    },
+    Education: {
+      props: z
+        .object({
+          showCoursework: z.boolean().nullable(),
+        })
+        .strict(),
+      description: describe(
+        "References the single canonical app-owned education record (institution, degree, program, dates, coursework). Do not recreate, rewrite, or invent education details such as GPA, honors, or coursework that is not supplied.",
       ),
     },
     Projects: {

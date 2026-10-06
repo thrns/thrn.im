@@ -1,6 +1,6 @@
 "use client";
 
-import { Renderer, type Spec } from "@json-render/react";
+import { JSONUIProvider, Renderer, type Spec } from "@json-render/react";
 
 import { BixxieActionContext, registry } from "@/components/bixxie/registry";
 import { css } from "@/lib/css";
@@ -26,7 +26,9 @@ export default function BixxieRenderer({ spec, onAsk, loading }: BixxieRendererP
 
   return (
     <BixxieActionContext.Provider value={{ onAsk }}>
-      <Renderer spec={spec} registry={registry} />
+      <JSONUIProvider registry={registry}>
+        <Renderer spec={spec} registry={registry} loading={loading} />
+      </JSONUIProvider>
     </BixxieActionContext.Provider>
   );
 }

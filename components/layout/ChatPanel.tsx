@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { css } from '@/lib/css';
 import { Button, Icon, Kbd, Message } from '@/components/ui';
@@ -35,7 +35,7 @@ export default function ChatPanel() {
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (s.chat && !wasOpenRef.current) {
       const active = document.activeElement;
       openerRef.current = active instanceof HTMLElement && active !== document.body && !panelRef.current?.contains(active)
@@ -44,6 +44,12 @@ export default function ChatPanel() {
       pendingFocusRef.current = 'open';
       focusTimerRef.current = setTimeout(finishFocusTransition, 450);
     } else if (!s.chat && wasOpenRef.current) {
+      // The panel becomes aria-hidden in this same render; blur whatever
+      // inside it still has focus (e.g. the button just clicked to close)
+      // so it isn't left focused under an aria-hidden ancestor until the
+      // transition hands focus back to the opener.
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && panelRef.current?.contains(active)) active.blur();
       abort();
       pendingFocusRef.current = 'close';
       focusTimerRef.current = setTimeout(finishFocusTransition, 450);

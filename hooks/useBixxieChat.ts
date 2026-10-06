@@ -3,7 +3,8 @@
 import type { Spec } from "@json-render/core";
 import { useCallback, useRef, useState } from "react";
 
-import { readBixxieSpecStream } from "@/lib/bixxie/stream";
+import { summarizeBixxieSpec } from "@/lib/bixxie/spec";
+import { BixxieStreamError, readBixxieSpecStream } from "@/lib/bixxie/stream";
 
 export type BixxieUserMessage = {
   id: string;
@@ -22,14 +23,18 @@ export type BixxieAssistantMessage = {
 
 export type BixxieMessage = BixxieUserMessage | BixxieAssistantMessage;
 
+// Light conversation history sent back to the server: the user's past
+// questions plus a short summary of Bixxie's own prior replies, so a
+// follow-up question doesn't read like the start of a brand new chat.
+type BixxieHistoryItem = { role: "user" | "assistant"; content: string };
+
 type RequestOptions = {
   assistantId: string;
-  prompt: string;
-  questions: string[];
+  history: BixxieHistoryItem[];
 };
 
 const MAX_INPUT_LENGTH = 2_000;
-const MAX_QUESTIONS = 8;
+const MAX_HISTORY_MESSAGES = 8;
 const MAX_CONVERSATION_LENGTH = 12_000;
 
 const HTTP_ERRORS: Record<number, string> = {
@@ -41,6 +46,18 @@ const HTTP_ERRORS: Record<number, string> = {
 const UNKNOWN_ERROR = "Bixxie couldn't answer that right now.";
 const INTERRUPTED_ERROR = "This response was interrupted.";
 
+// TEMP: Remove this metadata-only diagnostic logging after the Bixxie stream issue is resolved.
+function logBixxieClientFailure(
+  stage: "http_response" | "fetch" | "response_stream",
+  category: string,
+  status?: number,
+  detail?: string,
+): void {
+  const statusText = status === undefined ? "" : ` status=${status}`;
+  const detailText = detail === undefined ? "" : ` detail=${detail}`;
+  console.warn(`[bixxie] ${stage}: ${category}${statusText}${detailText}`);
+}
+
 function createId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -49,12 +66,30 @@ function createId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function latestValidQuestions(questions: string[]): string[] {
-  const latest = questions.slice(-MAX_QUESTIONS);
-  let total = latest.reduce((sum, question) => sum + question.length, 0);
+/** Turns the in-memory message list into light {role, content} history for the server. */
+function buildHistory(messages: BixxieMessage[]): BixxieHistoryItem[] {
+  const history: BixxieHistoryItem[] = [];
+
+  for (const message of messages) {
+    if (message.role === "user") {
+      history.push({ role: "user", content: message.text });
+      continue;
+    }
+
+    if (message.status !== "done" || !message.spec) continue;
+    const summary = summarizeBixxieSpec(message.spec);
+    if (summary) history.push({ role: "assistant", content: summary });
+  }
+
+  return history;
+}
+
+function latestValidHistory(history: BixxieHistoryItem[]): BixxieHistoryItem[] {
+  const latest = history.slice(-MAX_HISTORY_MESSAGES);
+  let total = latest.reduce((sum, item) => sum + item.content.length, 0);
 
   while (latest.length > 1 && total > MAX_CONVERSATION_LENGTH) {
-    total -= latest.shift()!.length;
+    total -= latest.shift()!.content.length;
   }
 
   return latest;
@@ -82,7 +117,7 @@ export function useBixxieChat() {
     setBusy(next);
   }, []);
 
-  const runRequest = useCallback(async ({ assistantId, prompt, questions }: RequestOptions) => {
+  const runRequest = useCallback(async ({ assistantId, history }: RequestOptions) => {
     if (busyRef.current) return;
 
     const controller = new AbortController();
@@ -101,29 +136,36 @@ export function useBixxieChat() {
       setAssistant((assistant) => ({ ...assistant, status: "error", error: message }));
     };
 
+    let failureStage: "fetch" | "response_stream" = "fetch";
+    let responseStatus: number | undefined;
+
     try {
       const response = await fetch("/api/bixxie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: latestValidQuestions(questions).map((content) => ({ role: "user", content })) }),
+        body: JSON.stringify({ messages: latestValidHistory(history) }),
         signal: controller.signal,
       });
+      responseStatus = response.status;
 
       if (!response.ok) {
+        logBixxieClientFailure("http_response", "non_success_status", response.status);
         fail(HTTP_ERRORS[response.status] ?? UNKNOWN_ERROR);
         return;
       }
 
       if (!response.body) {
+        logBixxieClientFailure("http_response", "missing_body", response.status);
         fail(UNKNOWN_ERROR);
         return;
       }
 
+      failureStage = "response_stream";
       const finalSpec = await readBixxieSpecStream(response.body, controller.signal, (spec) => {
         setAssistant((assistant) => ({ ...assistant, spec }));
       });
       setAssistant((assistant) => ({ ...assistant, spec: finalSpec, status: "done", error: undefined }));
-    } catch {
+    } catch (error) {
       if (controller.signal.aborted) {
         if (activeControllerRef.current === controller) {
           const assistant = messagesRef.current.find(
@@ -134,6 +176,14 @@ export function useBixxieChat() {
           else updateMessages((current) => current.filter((message) => message.id !== assistantId));
         }
       } else {
+        logBixxieClientFailure(
+          failureStage,
+          failureStage === "response_stream" && error instanceof BixxieStreamError
+            ? error.failureKind
+            : "request_failed",
+          responseStatus,
+          failureStage === "response_stream" && error instanceof BixxieStreamError ? error.detail : undefined,
+        );
         fail(UNKNOWN_ERROR);
       }
     } finally {
@@ -176,8 +226,7 @@ export function useBixxieChat() {
 
     await runRequest({
       assistantId: assistant.id,
-      prompt,
-      questions: next.filter((message): message is BixxieUserMessage => message.role === "user").map((message) => message.text),
+      history: buildHistory(next),
     });
   }, [runRequest, updateMessages]);
 
@@ -191,10 +240,7 @@ export function useBixxieChat() {
     const failed = current[assistantIndex] as BixxieAssistantMessage;
     if (failed.status !== "error" || failed.prompt.length > MAX_INPUT_LENGTH) return;
 
-    const precedingQuestions = current
-      .slice(0, assistantIndex)
-      .filter((message): message is BixxieUserMessage => message.role === "user")
-      .map((message) => message.text);
+    const history = buildHistory(current.slice(0, assistantIndex));
 
     updateMessages((messagesNow) => messagesNow.map((message) =>
       message.id === messageId && message.role === "assistant"
@@ -204,8 +250,7 @@ export function useBixxieChat() {
 
     await runRequest({
       assistantId: messageId,
-      prompt: failed.prompt,
-      questions: precedingQuestions,
+      history,
     });
   }, [runRequest, updateMessages]);
 

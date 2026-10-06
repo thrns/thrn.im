@@ -3,10 +3,11 @@
 import { createContext, useContext } from "react";
 import { defineRegistry } from "@json-render/react";
 
+import { DataRow, RowLink } from "@/components/common/DataTable";
 import StatusPill from "@/components/common/StatusPill";
 import { Tag } from "@/components/common/Tag";
 import TextLink from "@/components/common/TextLink";
-import { CASES, PROJECTS, ROLES, STACK } from "@/lib/data";
+import { CASES, EDUCATION, PROJECTS, ROLES, STACK } from "@/lib/data";
 import { css } from "@/lib/css";
 import { EMAIL, PATH } from "@/lib/chrome";
 import { catalog } from "@/lib/bixxie/catalog";
@@ -26,27 +27,26 @@ const LINK_DESTINATIONS = [
   { key: "resume", label: "Resume", href: PATH.resume },
 ] as const;
 
-const LINK_UL =
-  "font-size:14px;line-height:21px;font-weight:300;letter-spacing:-0.011em;text-decoration:underline;text-decoration-color:var(--foreground);text-decoration-thickness:1.5px;text-underline-offset:5px";
-
 export const { registry } = defineRegistry(catalog, {
   components: {
     Answer: ({ props, children }) => (
-      <div style={css("width:100%;display:flex;flex-direction:column;gap:24px")}>
-        {props.label && <span className="eyebrow">{props.label}</span>}
-        <h3 className="h3" style={css("margin:0")}>{props.title}</h3>
-        {props.intro && (
-          <p className="p-lg light" style={css("margin:0;max-width:var(--measure)")}>
-            {props.intro}
-          </p>
-        )}
+      <div style={css("width:100%;display:flex;flex-direction:column;gap:20px")}>
+        <div>
+          {props.label && <span className="eyebrow">{props.label}</span>}
+          <h2 className="h4" style={css(`margin:${props.label ? "8px" : "0"} 0 0;font-weight:var(--weight-semibold)`)}>{props.title}</h2>
+          {props.intro && (
+            <p className="p light" style={css("margin:10px 0 0;max-width:var(--measure)")}>
+              {props.intro}
+            </p>
+          )}
+        </div>
         {children}
       </div>
     ),
     Section: ({ props, children }) => (
-      <section style={css("border-top:1px solid var(--foreground);padding-top:14px;display:flex;flex-direction:column;gap:12px")}>
+      <section style={css("border-top:1px solid var(--border);padding-top:18px;display:flex;flex-direction:column;gap:12px")}>
         {props.label && <span className="eyebrow">{props.label}</span>}
-        {props.title && <h4 className="h4" style={css("margin:0")}>{props.title}</h4>}
+        {props.title && <h4 className="h4" style={css(`margin:${props.label ? "10px" : "0"} 0 0`)}>{props.title}</h4>}
         {children}
       </section>
     ),
@@ -59,12 +59,18 @@ export const { registry } = defineRegistry(catalog, {
       </p>
     ),
     Metrics: ({ props }) => (
-      <div data-bixxie="metrics" style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;border-top:1px solid var(--foreground)")}>
+      <div
+        data-bixxie="metrics"
+        style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px")}
+      >
         {props.items.map((item, index) => (
-          <div key={`${item.label}-${index}`} style={css("min-width:0;padding:16px 0;border-bottom:1px solid var(--border)")}>
-            <div style={css("font-size:28px;line-height:34px;font-weight:600")}>{item.value}</div>
-            <div style={css("font-size:13px;line-height:20px;font-weight:300")}>{item.label}</div>
-            {item.note && <div style={css("margin-top:4px;font-size:12px;line-height:16px;color:var(--muted-foreground)")}>{item.note}</div>}
+          <div
+            key={`${item.label}-${index}`}
+            style={css("min-width:0;background:color-mix(in srgb,var(--foreground) 9%,var(--card));border:1px solid color-mix(in srgb,var(--foreground) 14%,var(--card));border-radius:6px;padding:12px 14px")}
+          >
+            <div style={css("font-size:18px;line-height:24px;font-weight:var(--weight-semibold);letter-spacing:-.011em")}>{item.value}</div>
+            <div className="p light" style={css("margin-top:6px")}>{item.label}</div>
+            {item.note && <div className="p-sm light muted" style={css("margin-top:2px")}>{item.note}</div>}
           </div>
         ))}
       </div>
@@ -75,8 +81,8 @@ export const { registry } = defineRegistry(catalog, {
 
       return (
         <div>
-          {props.showRole !== false && <div style={css("font-size:14px;line-height:21px;font-weight:600")}>{role.title}</div>}
-          <div style={css("font-size:14px;line-height:21px;font-weight:300;font-style:italic")}>{role.company}</div>
+          {props.showRole !== false && <div className="p" style={css("font-weight:var(--weight-semibold)")}>{role.title}</div>}
+          <div className="p-sm muted" style={css("margin-top:2px")}>{role.company}</div>
           {props.showSummary !== false && (
             <p className="p light" style={css("margin:10px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>
               {role.summary}
@@ -85,25 +91,37 @@ export const { registry } = defineRegistry(catalog, {
         </div>
       );
     },
+    Education: ({ props }) => (
+      <div>
+        <div className="p" style={css("font-weight:var(--weight-semibold)")}>{EDUCATION.degree}, {EDUCATION.program}</div>
+        <div className="p-sm muted" style={css("margin-top:2px")}>{EDUCATION.institution} — {EDUCATION.campus}</div>
+        <p className="p light" style={css("margin:10px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>
+          {EDUCATION.components.join(', ')}
+        </p>
+        {props.showCoursework !== false && (
+          <div style={css("margin-top:10px;display:flex;flex-wrap:wrap;gap:8px")}>
+            {Object.values(EDUCATION.coursework).flat().map((course) => <Tag key={course} size="sm">{course}</Tag>)}
+          </div>
+        )}
+      </div>
+    ),
     Projects: ({ props }) => {
       const projects = props.names
         .map((name) => PROJECTS.find((project) => project.name === name))
         .filter((project) => project !== undefined);
+      const columns = "minmax(120px,1.2fr) minmax(0,3fr) 100px";
 
+      // Each Projects element may carry one project or several (the model streams some
+      // answers one element at a time), so the row list never assumes a shared table
+      // header — only a consistent per-row rule, matching the ruled rows on /projects.
       return (
         <div>
           {projects.map((project, index) => (
-            <div
-              key={project.name}
-              data-bixxie="project-row"
-              style={css(`display:grid;grid-template-columns:minmax(120px,1.2fr) minmax(0,3fr) 100px;gap:16px;align-items:start;padding:14px 0;border-top:${index === 0 ? "1px solid var(--foreground)" : "0"};border-bottom:1px solid var(--border)`)}
-            >
-              <TextLink href={project.url}>
-                <span style={css(LINK_UL)}>{project.name}</span>
-              </TextLink>
-              <span className="p light">{project.what}</span>
+            <DataRow key={project.name} columns={columns} delay={index * 70}>
+              <RowLink href={project.url}>{project.name}</RowLink>
+              <span className="p light" data-label="Notes">{project.what}</span>
               <StatusPill status={project.status} pulse={project.status === "Active"} />
-            </div>
+            </DataRow>
           ))}
         </div>
       );
@@ -126,34 +144,30 @@ export const { registry } = defineRegistry(catalog, {
       const summary = props.summary ?? canonicalSummary;
 
       return (
-        <div style={css("padding:16px 0;border-top:1px solid var(--foreground);border-bottom:1px solid var(--border)")}>
-          <TextLink href={href}>
-            <span style={css(LINK_UL)}>{title}</span>
-          </TextLink>
+        <div style={css("padding-top:4px")}>
+          <TextLink href={href}>{title}</TextLink>
           {summary && <p className="p light" style={css("margin:8px 0 0;max-width:var(--measure)")}>{summary}</p>}
         </div>
       );
     },
     Facts: ({ props }) => (
-      <div>
+      <div style={css("border-top:1px solid var(--border);border-radius:8px;overflow:hidden")}>
         {props.rows.map((row, index) => (
           <div
             key={`${row.label}-${index}`}
             data-bixxie="fact-row"
-            style={css(`display:grid;grid-template-columns:120px minmax(0,1fr);gap:20px;padding:12px 0;border-top:${index === 0 ? "1px solid var(--foreground)" : "0"};border-bottom:1px solid var(--border)`)}
+            style={css(`display:grid;grid-template-columns:120px minmax(0,1fr);gap:20px;padding:12px 2px;border-top:${index === 0 ? "0" : "1px solid var(--border)"}`)}
           >
-            <span style={css("font-family:var(--font-mono);font-size:12px;line-height:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)")}>
-              {row.label}
-            </span>
+            <span className="eyebrow">{row.label}</span>
             <span className="p light">{row.value}</span>
           </div>
         ))}
       </div>
     ),
     Comparison: ({ props }) => (
-      <div data-bixxie="comparison" style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;border-top:1px solid var(--foreground);border-bottom:1px solid var(--foreground)")}>
-        <div style={css("padding:12px 0;font-size:14px;line-height:21px;font-weight:600")}>{props.leftTitle}</div>
-        <div data-bixxie="comparison-right-title" style={css("padding:12px 0 12px 20px;border-left:1px solid var(--border);font-size:14px;line-height:21px;font-weight:600")}>
+      <div data-bixxie="comparison" style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)")}>
+        <div className="p" style={css("padding:12px 0;font-weight:var(--weight-semibold)")}>{props.leftTitle}</div>
+        <div data-bixxie="comparison-right-title" className="p" style={css("padding:12px 0 12px 20px;border-left:1px solid var(--border);font-weight:var(--weight-semibold)")}>
           {props.rightTitle}
         </div>
         {props.rows.map((row, index) => (
@@ -162,11 +176,9 @@ export const { registry } = defineRegistry(catalog, {
             data-bixxie="comparison-row"
             style={css("grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;row-gap:8px;padding:4px 0 12px")}
           >
-            <span style={css("grid-column:1/-1;font-family:var(--font-mono);font-size:11px;line-height:14px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)")}>
-              {row.label}
-            </span>
-            <span style={css("font-size:13px;line-height:20px;font-weight:300")}>{row.left}</span>
-            <span data-bixxie="comparison-value-right" style={css("padding-left:20px;border-left:1px solid var(--border);font-size:13px;line-height:20px;font-weight:300")}>
+            <span className="eyebrow" style={css("grid-column:1/-1")}>{row.label}</span>
+            <span className="p-sm light">{row.left}</span>
+            <span data-bixxie="comparison-value-right" className="p-sm light" style={css("padding-left:20px;border-left:1px solid var(--border)")}>
               {row.right}
             </span>
           </div>
@@ -174,9 +186,9 @@ export const { registry } = defineRegistry(catalog, {
       </div>
     ),
     Notice: ({ props }) => (
-      <aside style={css("padding:12px 14px;border-radius:0;background:var(--muted);box-shadow:none")}>
-        <div style={css("font-size:14px;line-height:21px;font-weight:500")}>{props.title}</div>
-        <p style={css("margin:4px 0 0;font-size:13px;line-height:20px;font-weight:300")}>{props.body}</p>
+      <aside style={css("padding:12px 14px;border-radius:8px;background:var(--muted);box-shadow:none")}>
+        <div className="p" style={css("font-weight:var(--weight-medium)")}>{props.title}</div>
+        <p className="p-sm light" style={css("margin:4px 0 0")}>{props.body}</p>
       </aside>
     ),
     Links: ({ props }) => {

@@ -28,10 +28,38 @@ describe("Bixxie conversation validation", () => {
     expect(rejects(() => validateConversation([{ role: "user" }]))).toBe(true);
   });
 
-  test("accepts only user roles and rejects all other or unknown roles", () => {
-    for (const role of ["assistant", "system", "developer", "tool", "unknown"]) {
+  test("rejects roles other than user or assistant, and requires the last message to be user", () => {
+    for (const role of ["system", "developer", "tool", "unknown"]) {
       expect(rejects(() => validateConversation([{ role, content: "hello" }]))).toBe(true);
     }
+    // A lone assistant message is also rejected: it's not a valid last turn on its own.
+    expect(rejects(() => validateConversation([{ role: "assistant", content: "hello" }]))).toBe(true);
+  });
+
+  test("accepts light assistant history ahead of the current user question", () => {
+    const messages = validateConversation([
+      { role: "user", content: "What's your stack?" },
+      { role: "assistant", content: "Technical Stack — Python, TypeScript." },
+      { role: "user", content: "What about databases?" },
+    ]);
+    expect(messages.length).toBe(3);
+    expect(JSON.stringify(messages[2])).toBe(JSON.stringify({ role: "user", content: "What about databases?" }));
+  });
+
+  test("rejects a conversation that doesn't end on a user message", () => {
+    const messages = [
+      { role: "user", content: "What's your stack?" },
+      { role: "assistant", content: "Technical Stack — Python, TypeScript." },
+    ];
+    expect(rejects(() => validateConversation(messages))).toBe(true);
+  });
+
+  test("rejects an assistant summary longer than 400 characters", () => {
+    const messages = [
+      { role: "assistant", content: "x".repeat(401) },
+      { role: "user", content: "hello" },
+    ];
+    expect(rejects(() => validateConversation(messages))).toBe(true);
   });
 
   test("rejects more than eight messages", () => {

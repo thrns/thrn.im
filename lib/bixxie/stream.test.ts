@@ -26,6 +26,29 @@ describe("Bixxie UI streaming", () => {
     expect(result.elements[result.root]?.type).toBe("Answer");
   });
 
+  test("accepts SpecStream leaf elements that omit children", async () => {
+    const jsonl = [
+      JSON.stringify({ op: "add", path: "/root", value: "answer" }),
+      JSON.stringify({
+        op: "add",
+        path: "/elements/answer",
+        value: {
+          type: "Answer",
+          props: { label: null, title: "Portfolio", intro: null },
+          children: ["text"],
+        },
+      }),
+      JSON.stringify({
+        op: "add",
+        path: "/elements/text",
+        value: { type: "TextBlock", props: { text: "Verified fact", tone: null } },
+      }),
+    ].join("\n");
+
+    const result = await readBixxieSpecStream(byteStream(jsonl), new AbortController().signal, () => undefined);
+    expect(JSON.stringify(result.elements.text.children)).toBe("[]");
+  });
+
   test("abort returns only a controlled error and never exposes raw stream text", async () => {
     const secretStreamText = "UPSTREAM_PRIVATE_TEXT";
     const controller = new AbortController();
@@ -43,6 +66,37 @@ describe("Bixxie UI streaming", () => {
 
     expect(errorMessage).toBe("This response was interrupted.");
     expect(rendered).toBe(false);
+  });
+
+  test("salvages a truncated final spec by dropping its dangling child reference", async () => {
+    const jsonl = [
+      JSON.stringify({ op: "add", path: "/root", value: "answer" }),
+      JSON.stringify({
+        op: "add",
+        path: "/elements/answer",
+        value: {
+          type: "Answer",
+          props: { label: null, title: "Portfolio", intro: null },
+          children: ["text", "more"],
+        },
+      }),
+      JSON.stringify({
+        op: "add",
+        path: "/elements/text",
+        value: { type: "TextBlock", props: { text: "Verified fact", tone: null } },
+      }),
+      // "more" is referenced as a child but the stream cuts off before it
+      // ever arrives (e.g. the model hit its output token budget).
+    ].join("\n");
+
+    const updates: string[] = [];
+    const result = await readBixxieSpecStream(byteStream(jsonl), new AbortController().signal, () => {
+      updates.push("update");
+    });
+
+    expect(result.elements[result.root]?.type).toBe("Answer");
+    expect(Object.keys(result.elements)).toEqual(["answer", "text"]);
+    expect(updates.length > 0).toBe(true);
   });
 
   test("malformed JSONL produces a controlled stream error", async () => {

@@ -26,8 +26,15 @@ describe('retrievePortfolioContext', () => {
     expect(context).toContain(PROFILE.email);
   });
 
-  test('always includes the canonical profile, including for unrelated queries', () => {
-    expect(retrievePortfolioContext('How does Kubernetes work?')).toContain(`[SOURCE: profile:${PROFILE.fullName}]`);
+  test('includes only a short profile summary for unrelated queries', () => {
+    const context = retrievePortfolioContext('How does Kubernetes work?');
+    expect(context).toContain(`[SOURCE: profile-summary:${PROFILE.fullName}]`);
+    expect(context.includes(`[SOURCE: profile:${PROFILE.fullName}]`)).toBe(false);
+  });
+
+  test('includes the full profile for profile/about queries', () => {
+    const context = retrievePortfolioContext('Tell me about yourself');
+    expect(context).toContain(`[SOURCE: profile:${PROFILE.fullName}]`);
   });
 
   test('returns no more than seven sources', () => {

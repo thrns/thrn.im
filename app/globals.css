@@ -144,8 +144,6 @@ html,body{height:100%;margin:0}
 /* Bixxie responsive layout */
 @media (max-width:640px){
   [data-bixxie="metrics"]{grid-template-columns:minmax(0,1fr)!important}
-  [data-bixxie="project-row"]{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
-  [data-bixxie="project-row"]>:last-child{justify-self:start!important}
   [data-bixxie="fact-row"]{grid-template-columns:minmax(0,1fr)!important;gap:4px!important}
   [data-bixxie="comparison"]{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
   [data-bixxie="comparison-row"]{grid-template-columns:minmax(0,1fr)!important}

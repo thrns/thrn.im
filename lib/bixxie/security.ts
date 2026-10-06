@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 
-export type UserMessage = {
-  role: "user";
+export type ConversationMessage = {
+  role: "user" | "assistant";
   content: string;
 };
 
@@ -14,6 +14,9 @@ export class BixxieInputValidationError extends Error {
 
 const MAX_MESSAGES = 8;
 const MAX_MESSAGE_CHARS = 2_000;
+// Assistant turns are a short summary of Bixxie's own prior reply, not the
+// full structured output, so they get a much tighter cap than a user message.
+const MAX_ASSISTANT_SUMMARY_CHARS = 400;
 const MAX_CONVERSATION_CHARS = 12_000;
 
 const ZERO_WIDTH_AND_FORMAT_CHARS = /[\p{Cf}\u034f\u115f\u1160\u17b4\u17b5\u3164\ufe00-\ufe0f\uffa0]/gu;
@@ -26,13 +29,20 @@ export function normalizeUserInput(text: string): string {
     .trim();
 }
 
-export function validateConversation(input: unknown): UserMessage[] {
+export function validateConversation(input: unknown): ConversationMessage[] {
   if (!Array.isArray(input) || input.length < 1 || input.length > MAX_MESSAGES) {
     throw new BixxieInputValidationError();
   }
 
+  // The last message is always the live question this request is answering;
+  // everything before it is light history for continuity only.
+  const lastMessage = input[input.length - 1] as Record<string, unknown> | undefined;
+  if (!lastMessage || lastMessage.role !== "user") {
+    throw new BixxieInputValidationError();
+  }
+
   let totalChars = 0;
-  const normalized: UserMessage[] = [];
+  const normalized: ConversationMessage[] = [];
 
   for (const message of input) {
     if (
@@ -47,12 +57,16 @@ export function validateConversation(input: unknown): UserMessage[] {
     }
 
     const candidate = message as Record<string, unknown>;
-    if (candidate.role !== "user" || typeof candidate.content !== "string") {
+    if (
+      (candidate.role !== "user" && candidate.role !== "assistant") ||
+      typeof candidate.content !== "string"
+    ) {
       throw new BixxieInputValidationError();
     }
 
+    const maxChars = candidate.role === "assistant" ? MAX_ASSISTANT_SUMMARY_CHARS : MAX_MESSAGE_CHARS;
     const content = normalizeUserInput(candidate.content);
-    if (content.length < 1 || content.length > MAX_MESSAGE_CHARS) {
+    if (content.length < 1 || content.length > maxChars) {
       throw new BixxieInputValidationError();
     }
 
@@ -61,7 +75,7 @@ export function validateConversation(input: unknown): UserMessage[] {
       throw new BixxieInputValidationError();
     }
 
-    normalized.push({ role: "user", content });
+    normalized.push({ role: candidate.role, content });
   }
 
   return normalized;
@@ -154,7 +168,11 @@ function redactJsonLine(line: string, matcher: RegExp | null): string {
     const parsed: unknown = JSON.parse(line);
     return JSON.stringify(redactJsonValue(parsed, matcher));
   } catch {
-    throw new Error("Unable to redact an invalid JSONL stream.");
+    // The line can be invalid/incomplete JSON when the model's output gets
+    // cut off mid-element (e.g. hitting the token budget) rather than
+    // genuinely malformed — the client already salvages a truncated answer,
+    // so redact as plain text instead of throwing away the whole response.
+    return line.replace(matcher, "Bixxie");
   }
 }
 

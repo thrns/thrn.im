@@ -1,16 +1,18 @@
-import { streamText } from "ai";
 import {
   createStreamingRedactor,
   isExtractionAttempt,
   validateConversation,
-  type UserMessage,
+  type ConversationMessage,
 } from "@/lib/bixxie/security";
 import { getBixxieFallback } from "@/lib/bixxie/fallback";
 import { retrievePortfolioContext } from "@/lib/bixxie/grounding";
 import { BIXXIE_SYSTEM_PROMPT } from "@/lib/bixxie/prompt";
 
 const MAX_BODY_BYTES = 32 * 1024;
-const REQUEST_TIMEOUT_MS = 30_000;
+// Longer "explain" answers can take a while to finish streaming; keep enough
+// headroom above typical generation time so the request timeout doesn't cut
+// a legitimately-in-progress response short.
+const REQUEST_TIMEOUT_MS = 45_000;
 
 const RESPONSE_HEADERS = {
   "Content-Type": "text/plain; charset=utf-8",
@@ -85,10 +87,10 @@ function encodeDelimitedData(value: unknown): string {
   return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
 }
 
-function createUntrustedPrompt(messages: UserMessage[], portfolioContext: string): string {
+function createUntrustedPrompt(messages: ConversationMessage[], portfolioContext: string): string {
   return [
     "<USER_CONVERSATION>",
-    encodeDelimitedData(messages.map(({ content }) => content)),
+    encodeDelimitedData(messages.map(({ role, content }) => ({ role, content }))),
     "</USER_CONVERSATION>",
     "<PORTFOLIO_CONTEXT>",
     encodeDelimitedData(portfolioContext),
@@ -97,25 +99,43 @@ function createUntrustedPrompt(messages: UserMessage[], portfolioContext: string
 }
 
 async function createModelTextStream({ system, message, signal }: ModelStreamRequest): Promise<AsyncIterator<string>> {
-  const { createBixxieChatModel } = await import("@/lib/bixxie/provider");
-  const result = streamText({
-    model: createBixxieChatModel(),
+  const { streamBixxieCompletion } = await import("@/lib/bixxie/provider");
+  const stream = streamBixxieCompletion({
     system,
-    messages: [{ role: "user", content: message }],
+    message,
     temperature: 0.2,
-    maxOutputTokens: 500,
-    tools: {},
-    toolChoice: "none",
-    abortSignal: signal,
+    maxOutputTokens: 3000,
+    signal,
   });
 
-  return result.textStream[Symbol.asyncIterator]();
+  return stream[Symbol.asyncIterator]();
 }
 
 function responseStatusForError(error: unknown): number {
   if (!error || typeof error !== "object") return 503;
   const candidate = error as { status?: unknown; statusCode?: unknown };
   return candidate.status === 429 || candidate.statusCode === 429 ? 429 : 503;
+}
+
+// TEMP: Remove this metadata-only diagnostic logging after the Bixxie endpoint issue is resolved.
+function logBixxieFailure(
+  stage: "model_setup" | "first_chunk" | "stream",
+  error: unknown,
+  timedOut = false,
+): void {
+  const candidate = error && typeof error === "object"
+    ? error as { status?: unknown; statusCode?: unknown }
+    : {};
+  const rawStatus = candidate.status ?? candidate.statusCode;
+  const status = typeof rawStatus === "number" && Number.isInteger(rawStatus) && rawStatus >= 100 && rawStatus <= 599
+    ? rawStatus
+    : null;
+
+  console.error("[bixxie] request failed", {
+    stage,
+    category: status !== null ? "upstream_http_error" : timedOut ? "timeout" : "no_http_status",
+    status,
+  });
 }
 
 function makeAbortController(request: Request): {
@@ -141,6 +161,7 @@ function createRedactedTextStream(
   iterator: AsyncIterator<string>,
   firstChunk: IteratorResult<string>,
   abort: AbortController,
+  requestSignal: AbortSignal,
   cleanup: () => void,
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -174,8 +195,12 @@ function createRedactedTextStream(
         const finalText = redactor.flush();
         if (finalText && !cancelled) controller.enqueue(encoder.encode(finalText));
         if (!cancelled) controller.close();
-      } catch {
-        // Never expose provider errors or an unredacted/incomplete model line.
+      } catch (error) {
+        // Log metadata only (status code, timeout flag); never expose the
+        // provider error itself or an unredacted/incomplete model line.
+        if (!requestSignal.aborted) {
+          logBixxieFailure("stream", error, abort.signal.aborted);
+        }
         enqueueSafeFallback(controller);
         if (!cancelled) controller.close();
       } finally {
@@ -232,7 +257,7 @@ export async function handleBixxieRequest(
     return textResponse("Invalid request payload.", 400);
   }
 
-  let messages: UserMessage[];
+  let messages: ConversationMessage[];
   try {
     messages = validateConversation((payload as { messages: unknown }).messages);
   } catch {
@@ -258,6 +283,7 @@ export async function handleBixxieRequest(
       firstChunk = await iterator.next();
     } catch (error) {
       cleanup();
+      if (!request.signal.aborted) logBixxieFailure("first_chunk", error, controller.signal.aborted);
       try {
         await iterator.return?.();
       } catch {
@@ -268,10 +294,11 @@ export async function handleBixxieRequest(
     }
 
     return new Response(
-      createRedactedTextStream(iterator, firstChunk, controller, cleanup),
+      createRedactedTextStream(iterator, firstChunk, controller, request.signal, cleanup),
       { status: 200, headers: RESPONSE_HEADERS },
     );
   } catch (error) {
+    if (!request.signal.aborted) logBixxieFailure("model_setup", error);
     return textResponse(getBixxieFallback("service-unavailable"), responseStatusForError(error));
   }
 }
