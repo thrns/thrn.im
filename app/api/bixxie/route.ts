@@ -5,8 +5,10 @@ import {
   validateConversation,
   type ConversationMessage,
 } from "@/lib/bixxie/security";
+import { requestDirectives } from "@/lib/bixxie/advocacy";
 import { getBixxieFallback } from "@/lib/bixxie/fallback";
-import { retrievePortfolioContext } from "@/lib/bixxie/grounding";
+import { retrieveEvidenceContext, retrievePortfolioContext } from "@/lib/bixxie/grounding";
+import { classifyProofTier } from "@/lib/bixxie/proof";
 import { BIXXIE_SYSTEM_PROMPT } from "@/lib/bixxie/prompt";
 
 const MAX_BODY_BYTES = 32 * 1024;
@@ -104,7 +106,9 @@ async function createModelTextStream({ system, message, signal }: ModelStreamReq
   const stream = streamBixxieCompletion({
     system,
     message,
-    temperature: 0.2,
+    // Higher than a strict-lookup setting on purpose: replies should read differently each time.
+    // Facts stay grounded by the PORTFOLIO_CONTEXT rules and the structured-output schema.
+    temperature: 0.8,
     maxOutputTokens: 3500,
     signal,
   });
@@ -287,10 +291,15 @@ export async function handleBixxieRequest(
   }
 
   try {
-    const portfolioContext = retrievePortfolioContext(latestMessage.content);
+    // Capability and factual-about-his-work questions also get an evidence-only
+    // retrieval pass, so there is real proof in the context to cite.
+    const baseContext = retrievePortfolioContext(latestMessage.content);
+    const evidenceContext = classifyProofTier(messages) ? retrieveEvidenceContext(latestMessage.content) : "";
+    const portfolioContext = evidenceContext ? `${evidenceContext}\n${baseContext}` : baseContext;
     const { controller, cleanup } = makeAbortController(request);
+    const directives = requestDirectives(messages, portfolioContext);
     const iterator = await createTextStream({
-      system: BIXXIE_SYSTEM_PROMPT,
+      system: [BIXXIE_SYSTEM_PROMPT, ...directives].join("\n\n"),
       message: createUntrustedPrompt(messages, portfolioContext),
       signal: controller.signal,
     });

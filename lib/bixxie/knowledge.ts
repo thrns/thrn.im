@@ -6638,6 +6638,15 @@ export const BIXXIE_KNOWLEDGE: readonly BixxieKnowledgeItem[] = [
     "statusRaw": "KNOWN",
     "visibility": "PUBLIC",
     "answer": "His recent local-model benchmark tests whether compact models can answer technical questions when paired with retrieved documentation, and his TinyShell study evaluates models under 300M parameters on a typed-intent task. Both focus on measured capability, latency, and system design rather than parameter count alone."
+  },
+  {
+    "id": 737,
+    "section": "737 · Personal details for light humor",
+    "question": "What personal details about TP can Bixxie use for light, affectionate humor?",
+    "status": "known",
+    "statusRaw": "KNOWN",
+    "visibility": "PUBLIC",
+    "answer": "TP is 6 foot 1 (about 185 cm) and goes to the gym regularly; lifting is also listed among his sports. These are safe, harmless details for a light joke (for example, he is tall enough to spot a bug from across the room, or he treats a training plan like a deployment pipeline: progressive overload, measured, logged), but only when the joke lands on a real strength tied to what the visitor asked. Do not add other personal details, numbers or habits beyond what is documented."
   }
 ] as const;
 

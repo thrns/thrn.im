@@ -351,8 +351,7 @@ function scoreSource(tokens: string[], queryText: string, source: GroundingSourc
   return score;
 }
 
-function serializeSources(sources: GroundingSource[]): string {
-  const maximum = 10_000;
+function serializeSources(sources: GroundingSource[], maximum = 10_000): string {
   let output = '';
 
   for (const source of sources) {
@@ -400,4 +399,49 @@ export function retrievePortfolioContext(query: string): string {
     ...ranked.map(({ source }) => source),
   ].slice(0, personalQuery ? 10 : 7);
   return serializeSources(selected);
+}
+
+// Words that appear in almost every capability question and say nothing about
+// which piece of work answers it; scoring on them drowns out the real topic.
+const EVIDENCE_NOISE = new Set([
+  'build', 'built', 'building', 'system', 'systems', 'production', 'experience', 'experienced', 'good', 'great',
+  'strong', 'suited', 'suitable', 'fit', 'role', 'roles', 'engineer', 'engineering', 'work', 'worked', 'working',
+  'ever', 'any', 'show', 'proof', 'able', 'capable', 'ready', 'right', 'tharun', 'tp', 'he', 'his', 'him',
+  'handle', 'handles', 'handled', 'handling', 'technical', 'approach', 'deal', 'manage', 'lead', 'ship', 'shipped', 'real', 'world', 'team', 'someone', 'looking', 'need', 'hire', 'hiring',
+]);
+
+const EVIDENCE_TYPES: ReadonlyArray<GroundingSource['type']> = ['role', 'case-study', 'project', 'publication'];
+
+/**
+ * A second, evidence-only retrieval pass for proof-backed answers. The general
+ * retriever also surfaces curated Q&A and profile text, which is useful for
+ * phrasing but is not itself proof; this ranks only roles, case studies,
+ * projects and publications, ignoring the filler words capability questions
+ * are full of, so "can he build production RAG systems" lands on the work that
+ * actually involved RAG. Returns '' when nothing scores.
+ */
+export function retrieveEvidenceContext(query: string, limit = 3): string {
+  const { tokens } = normalizeQuery(query);
+  const topical = tokens.filter((token) => !EVIDENCE_NOISE.has(token));
+  if (topical.length === 0) return '';
+
+  // A source only counts as evidence when it is actually about the topic: a hit
+  // on its name/keywords, or at least two different topical words in its text.
+  // One stray shared word ("technical") must not turn unrelated work into "proof".
+  const needed = Math.min(2, topical.length);
+  const ranked = SOURCES
+    .filter((source) => EVIDENCE_TYPES.includes(source.type))
+    .map((source, index) => {
+      const nameTokens = new Set([...tokenize(source.title), ...source.keywords.flatMap(tokenize)]);
+      const bodyTokens = new Set(tokenize(source.text));
+      const named = topical.some((token) => nameTokens.has(token));
+      const bodyHits = topical.filter((token) => bodyTokens.has(token)).length;
+      return { source, index, relevant: named || bodyHits >= needed, score: scoreSource(topical, topical.join(' '), source) };
+    })
+    .filter((result) => result.relevant && result.score > 0)
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .slice(0, limit)
+    .map(({ source }) => source);
+
+  return serializeSources(ranked, 7_000);
 }

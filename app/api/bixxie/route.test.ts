@@ -131,3 +131,22 @@ describe("Bixxie POST route validation and origin checks", () => {
     expect(body).toContain("Temporarily unavailable");
   });
 });
+
+describe("Bixxie fit-question directive", () => {
+  async function systemFor(content: string): Promise<string> {
+    let system = "";
+    await handleBixxieRequest(jsonRequest({ messages: [{ role: "user", content }] }), async (input) => {
+      system = input.system;
+      return iteratorFrom(getBixxieFallback("unknown"));
+    });
+    return system;
+  }
+
+  test("adds the advocate directive for 'reasons not to hire' on a tech role", async () => {
+    expect(await systemFor("I'm looking for an AI engineer, give me reasons to not hire TP")).toContain("REQUEST-SPECIFIC DIRECTIVE");
+  });
+
+  test("adds no directive for ordinary questions", async () => {
+    expect(await systemFor("hi")).not.toContain("REQUEST-SPECIFIC DIRECTIVE");
+  });
+});
