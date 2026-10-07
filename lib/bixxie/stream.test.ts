@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { SECURITY_FALLBACK_JSONL } from "@/lib/bixxie/fallback";
+import { SECURITY_FALLBACK_JSON } from "@/lib/bixxie/fallback";
 import { BixxieStreamError, readBixxieSpecStream } from "@/lib/bixxie/stream";
 
 function byteStream(text: string, chunkSize = text.length): ReadableStream<Uint8Array> {
@@ -16,9 +16,9 @@ function byteStream(text: string, chunkSize = text.length): ReadableStream<Uint8
 }
 
 describe("Bixxie UI streaming", () => {
-  test("compiles and exposes validated partial json-render specs", async () => {
+  test("compiles and exposes validated partial specs as a JSON object streams in", async () => {
     const updates: string[] = [];
-    const result = await readBixxieSpecStream(byteStream(SECURITY_FALLBACK_JSONL, 13), new AbortController().signal, (spec) => {
+    const result = await readBixxieSpecStream(byteStream(SECURITY_FALLBACK_JSON, 13), new AbortController().signal, (spec) => {
       updates.push(spec.root);
     });
 
@@ -26,26 +26,20 @@ describe("Bixxie UI streaming", () => {
     expect(result.elements[result.root]?.type).toBe("Answer");
   });
 
-  test("accepts SpecStream leaf elements that omit children", async () => {
-    const jsonl = [
-      JSON.stringify({ op: "add", path: "/root", value: "answer" }),
-      JSON.stringify({
-        op: "add",
-        path: "/elements/answer",
-        value: {
+  test("accepts a leaf element that omits children", async () => {
+    const json = JSON.stringify({
+      root: "answer",
+      elements: {
+        answer: {
           type: "Answer",
-          props: { label: null, title: "Portfolio", intro: null },
+          props: { text: "Portfolio" },
           children: ["text"],
         },
-      }),
-      JSON.stringify({
-        op: "add",
-        path: "/elements/text",
-        value: { type: "TextBlock", props: { text: "Verified fact", tone: null } },
-      }),
-    ].join("\n");
+        text: { type: "TextBlock", props: { text: "Verified fact", tone: null } },
+      },
+    });
 
-    const result = await readBixxieSpecStream(byteStream(jsonl), new AbortController().signal, () => undefined);
+    const result = await readBixxieSpecStream(byteStream(json), new AbortController().signal, () => undefined);
     expect(JSON.stringify(result.elements.text.children)).toBe("[]");
   });
 
@@ -69,28 +63,24 @@ describe("Bixxie UI streaming", () => {
   });
 
   test("salvages a truncated final spec by dropping its dangling child reference", async () => {
-    const jsonl = [
-      JSON.stringify({ op: "add", path: "/root", value: "answer" }),
-      JSON.stringify({
-        op: "add",
-        path: "/elements/answer",
-        value: {
+    // "more" is referenced as a child but the stream cuts off before its
+    // own element ever arrives (e.g. the model hit its output token
+    // budget) — simulated here by a hand-truncated JSON string rather than
+    // a real cut generation.
+    const truncated = JSON.stringify({
+      root: "answer",
+      elements: {
+        answer: {
           type: "Answer",
-          props: { label: null, title: "Portfolio", intro: null },
+          props: { text: "Portfolio" },
           children: ["text", "more"],
         },
-      }),
-      JSON.stringify({
-        op: "add",
-        path: "/elements/text",
-        value: { type: "TextBlock", props: { text: "Verified fact", tone: null } },
-      }),
-      // "more" is referenced as a child but the stream cuts off before it
-      // ever arrives (e.g. the model hit its output token budget).
-    ].join("\n");
+        text: { type: "TextBlock", props: { text: "Verified fact", tone: null }, children: [] },
+      },
+    });
 
     const updates: string[] = [];
-    const result = await readBixxieSpecStream(byteStream(jsonl), new AbortController().signal, () => {
+    const result = await readBixxieSpecStream(byteStream(truncated), new AbortController().signal, () => {
       updates.push("update");
     });
 
@@ -99,10 +89,40 @@ describe("Bixxie UI streaming", () => {
     expect(updates.length > 0).toBe(true);
   });
 
-  test("malformed JSONL produces a controlled stream error", async () => {
+  // A response that's genuinely cut off mid-stream (hit the token budget,
+  // or the connection dropped) leaves an incomplete JSON object — missing
+  // closing braces, a half-written string. The best-effort dangling-bracket
+  // closer should still recover whatever real content did arrive.
+  test("recovers a response truncated mid-element (missing closing braces)", async () => {
+    const full = JSON.stringify({
+      root: "answer",
+      elements: {
+        answer: {
+          type: "Answer",
+          props: { text: "A short answer." },
+          children: ["facts"],
+        },
+        facts: {
+          type: "Facts",
+          props: { rows: [{ label: "A", value: "B" }] },
+          children: [],
+        },
+      },
+    });
+    // Cut off partway through the "facts" element's props.
+    const cutIndex = full.indexOf('"facts"', full.indexOf('"facts"') + 1) + 40;
+    const truncated = full.slice(0, cutIndex);
+
+    const result = await readBixxieSpecStream(byteStream(truncated), new AbortController().signal, () => undefined);
+    expect(result.elements[result.root]?.type).toBe("Answer");
+    const answerProps = result.elements[result.root]?.props as { text?: unknown };
+    expect(answerProps.text).toBe("A short answer.");
+  });
+
+  test("an empty or whitespace-only response produces a controlled stream error", async () => {
     let error: unknown;
     try {
-      await readBixxieSpecStream(byteStream("{malformed}\n"), new AbortController().signal, () => undefined);
+      await readBixxieSpecStream(byteStream("   \n"), new AbortController().signal, () => undefined);
     } catch (caught) {
       error = caught;
     }

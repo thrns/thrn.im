@@ -120,6 +120,37 @@ function normalizeComponentProps(type: unknown, props: unknown): { value: unknow
   return { value, changed };
 }
 
+/**
+ * The model occasionally writes a component's own fields directly on the
+ * element instead of nested under props — e.g.
+ * `{type:"FollowUps", items:[...]}` instead of
+ * `{type:"FollowUps", props:{items:[...]}}` — most often on the last
+ * element of a response. Move any such sibling key that matches one of the
+ * component's own schema fields into props before validating, so the
+ * answer isn't lost over a placement slip the model otherwise got right.
+ */
+function backfillPropsFromElementSiblings(type: unknown, elementRecord: Record<string, unknown>): unknown {
+  if (typeof type !== "string") return elementRecord.props;
+
+  const components = catalog.data.components as Record<string, { props?: z.ZodTypeAny }>;
+  const componentSchema = components[type]?.props;
+  if (!(componentSchema instanceof z.ZodObject)) return elementRecord.props;
+
+  const existingProps = elementRecord.props && typeof elementRecord.props === "object" && !Array.isArray(elementRecord.props)
+    ? { ...(elementRecord.props as Record<string, unknown>) }
+    : {};
+
+  let changed = false;
+  for (const fieldKey of Object.keys(componentSchema.shape as Record<string, z.ZodTypeAny>)) {
+    if (fieldKey === "type" || fieldKey === "props" || fieldKey === "children") continue;
+    if (fieldKey in existingProps || !(fieldKey in elementRecord)) continue;
+    existingProps[fieldKey] = elementRecord[fieldKey];
+    changed = true;
+  }
+
+  return changed ? existingProps : elementRecord.props;
+}
+
 function normalizeSpec(value: object): unknown {
   const candidate = value as { elements?: unknown };
   if (!candidate.elements || typeof candidate.elements !== "object" || Array.isArray(candidate.elements)) {
@@ -133,22 +164,24 @@ function normalizeSpec(value: object): unknown {
         return [key, element];
       }
 
-      const elementRecord = element as { type?: unknown; props?: unknown; children?: unknown };
-      const { value: props, changed: propsChanged } = normalizeComponentProps(elementRecord.type, elementRecord.props);
+      const elementRecord = element as Record<string, unknown> & { type?: unknown; props?: unknown; children?: unknown };
+      const backfilledProps = backfillPropsFromElementSiblings(elementRecord.type, elementRecord);
+      const { value: props } = normalizeComponentProps(elementRecord.type, backfilledProps);
       // Some SpecStream examples omit children on leaf nodes. Normalize that
       // equivalent leaf form to the explicit empty array required by schema.
-      const needsChildren = !("children" in elementRecord);
-      if (!propsChanged && !needsChildren) return [key, element];
+      const children = "children" in elementRecord ? elementRecord.children : [];
+
+      // Rebuild to exactly {type, props, children}: the model occasionally
+      // leaks an extra stray key onto the element (component fields written
+      // directly on the element rather than under props, or a hallucinated
+      // key like "id"), and the catalog's element schema is strict about
+      // element shape, so any leftover key would otherwise sink an entire,
+      // otherwise-valid response.
+      const rebuilt = { type: elementRecord.type, props, children };
+      if (JSON.stringify(rebuilt) === JSON.stringify(element)) return [key, element];
 
       changed = true;
-      return [
-        key,
-        {
-          ...elementRecord,
-          props,
-          children: needsChildren ? [] : elementRecord.children,
-        },
-      ];
+      return [key, rebuilt];
     }),
   );
 
@@ -210,12 +243,11 @@ export function inspectBixxieSpec(value: unknown): BixxieSpecInspection {
     return { spec: null, failureKind: "root_not_answer" };
   }
 
-  const props = root.props as { title?: unknown; intro?: unknown } | undefined;
-  const hasTitle = typeof props?.title === "string" && props.title.trim().length > 0;
-  const hasIntro = typeof props?.intro === "string" && props.intro.trim().length > 0;
+  const props = root.props as { text?: unknown } | undefined;
+  const hasText = typeof props?.text === "string" && props.text.trim().length > 0;
   const hasChildren = (root.children?.length ?? 0) > 0;
 
-  return hasTitle || hasIntro || hasChildren
+  return hasText || hasChildren
     ? { spec }
     : { spec: null, failureKind: "empty_answer" };
 }
@@ -225,17 +257,14 @@ export function validateBixxieSpec(value: unknown): Spec | null {
 }
 
 /**
- * A short plain-text gist of a completed answer (the root Answer's title and
- * intro), for sending back as light conversation history. Not a transcript
+ * A short plain-text gist of a completed answer (the root Answer's text), for sending back as light conversation history. Not a transcript
  * of the full structured output — just enough for the model to know what it
  * already said, e.g. to avoid re-greeting on a follow-up question.
  */
 export function summarizeBixxieSpec(spec: Spec): string {
-  const root = spec.elements?.[spec.root] as { props?: { title?: unknown; intro?: unknown } } | undefined;
-  const title = typeof root?.props?.title === "string" ? root.props.title.trim() : "";
-  const intro = typeof root?.props?.intro === "string" ? root.props.intro.trim() : "";
+  const root = spec.elements?.[spec.root] as { props?: { text?: unknown } } | undefined;
 
-  return [title, intro].filter(Boolean).join(" — ");
+  return typeof root?.props?.text === "string" ? root.props.text.trim() : "";
 }
 
 type RenderableElement = { type: string; props: unknown; children: string[] };
@@ -265,13 +294,14 @@ export function extractRenderablePrefix(value: unknown): Spec | null {
   for (const [key, raw] of Object.entries(candidate.elements as Record<string, unknown>)) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
 
-    const record = raw as { type?: unknown; props?: unknown; children?: unknown };
+    const record = raw as Record<string, unknown> & { type?: unknown; props?: unknown; children?: unknown };
     if (typeof record.type !== "string" || !allowedComponents.includes(record.type)) continue;
 
     const component = components[record.type];
     if (!component) continue;
 
-    const { value: normalizedProps } = normalizeComponentProps(record.type, record.props);
+    const backfilledProps = backfillPropsFromElementSiblings(record.type, record);
+    const { value: normalizedProps } = normalizeComponentProps(record.type, backfilledProps);
     if (!normalizedProps || typeof normalizedProps !== "object" || Array.isArray(normalizedProps)) continue;
     if (!component.props.safeParse(normalizedProps).success) continue;
 
@@ -292,11 +322,9 @@ export function extractRenderablePrefix(value: unknown): Spec | null {
   const root = complete[candidate.root];
   if (!root || root.type !== "Answer") return null;
 
-  const rootProps = root.props as { title?: unknown; intro?: unknown };
-  const hasTitle = typeof rootProps.title === "string" && rootProps.title.trim().length > 0;
-  const hasIntro = typeof rootProps.intro === "string" && rootProps.intro.trim().length > 0;
-  const hasChildren = root.children.length > 0;
-  if (!hasTitle && !hasIntro && !hasChildren) return null;
+  const rootProps = root.props as { text?: unknown };
+  const hasText = typeof rootProps.text === "string" && rootProps.text.trim().length > 0;
+  if (!hasText && root.children.length === 0) return null;
 
   return { root: candidate.root, elements: complete } as Spec;
 }

@@ -38,13 +38,13 @@ const MAX_HISTORY_MESSAGES = 8;
 const MAX_CONVERSATION_LENGTH = 12_000;
 
 const HTTP_ERRORS: Record<number, string> = {
-  429: "Bixxie is getting a few too many requests right now.",
-  403: "This request could not be verified.",
-  413: "That question is too long.",
+  429: "Too many requests right now. Try again in a moment.",
+  403: "I couldn't verify that request.",
+  413: "That question is too long. Keep it under 2,000 characters.",
 };
 
-const UNKNOWN_ERROR = "Bixxie couldn't answer that right now.";
-const INTERRUPTED_ERROR = "This response was interrupted.";
+const UNKNOWN_ERROR = "I couldn't answer that right now.";
+const INTERRUPTED_ERROR = "This reply was interrupted.";
 
 // TEMP: Remove this metadata-only diagnostic logging after the Bixxie stream issue is resolved.
 function logBixxieClientFailure(
@@ -206,7 +206,7 @@ export function useBixxieChat() {
         prompt,
         spec: null,
         status: "error",
-        error: "That question is too long.",
+        error: "That question is too long. Keep it under 2,000 characters.",
       };
       updateMessages((current) => [...current, assistant]);
       return;

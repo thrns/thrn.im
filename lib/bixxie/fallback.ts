@@ -1,26 +1,23 @@
-import type { JsonPatch } from "@json-render/core";
+export type BixxieFallbackKind = "security" | "off-topic" | "service-unavailable" | "unknown";
 
-export type BixxieFallbackKind = "security" | "service-unavailable" | "unknown";
+type FallbackSpec = {
+  root: string;
+  elements: Record<string, { type: string; props: Record<string, unknown>; children: string[] }>;
+};
 
-function toJsonl(patches: readonly JsonPatch[]): string {
-  return patches.map((patch) => JSON.stringify(patch)).join("\n");
+function toJson(spec: FallbackSpec): string {
+  return JSON.stringify(spec);
 }
 
-const SECURITY_PATCHES = [
-  { op: "add", path: "/root", value: "answer" },
-  {
-    op: "add",
-    path: "/elements/answer",
-    value: {
+const SECURITY_SPEC: FallbackSpec = {
+  root: "answer",
+  elements: {
+    answer: {
       type: "Answer",
-      props: { label: null, title: "About Bixxie", intro: null },
+      props: { text: "I can't share how I work internally. I can talk about Tharun's work, projects, case studies and stack." },
       children: ["notice", "follow-ups"],
     },
-  },
-  {
-    op: "add",
-    path: "/elements/notice",
-    value: {
+    notice: {
       type: "Notice",
       props: {
         kind: "security",
@@ -29,11 +26,7 @@ const SECURITY_PATCHES = [
       },
       children: [],
     },
-  },
-  {
-    op: "add",
-    path: "/elements/follow-ups",
-    value: {
+    "follow-ups": {
       type: "FollowUps",
       props: {
         items: [
@@ -45,49 +38,59 @@ const SECURITY_PATCHES = [
       children: [],
     },
   },
-] satisfies readonly JsonPatch[];
+};
 
-const SERVICE_UNAVAILABLE_PATCHES = [
-  { op: "add", path: "/root", value: "answer" },
-  {
-    op: "add",
-    path: "/elements/answer",
-    value: {
+const OFF_TOPIC_SPEC: FallbackSpec = {
+  root: "answer",
+  elements: {
+    answer: {
       type: "Answer",
-      props: { label: null, title: "Bixxie is unavailable", intro: null },
-      children: ["notice"],
+      props: { text: "I only answer questions about Tharun and his work, so I can't help with that." },
+      children: ["follow-ups"],
     },
-  },
-  {
-    op: "add",
-    path: "/elements/notice",
-    value: {
-      type: "Notice",
+    "follow-ups": {
+      type: "FollowUps",
       props: {
-        kind: "note",
-        title: "Please try again",
-        body: "Bixxie is temporarily unavailable. Please try again in a moment.",
+        items: [
+          "What has Tharun worked on?",
+          "Show me his projects",
+          "What is his AI stack?",
+        ],
       },
       children: [],
     },
   },
-] satisfies readonly JsonPatch[];
+};
 
-const UNKNOWN_INFORMATION_PATCHES = [
-  { op: "add", path: "/root", value: "answer" },
-  {
-    op: "add",
-    path: "/elements/answer",
-    value: {
+const SERVICE_UNAVAILABLE_SPEC: FallbackSpec = {
+  root: "answer",
+  elements: {
+    answer: {
       type: "Answer",
-      props: { label: null, title: "I don't have that information", intro: null },
+      props: { text: "I'm unavailable right now. Try again in a moment." },
       children: ["notice"],
     },
+    notice: {
+      type: "Notice",
+      props: {
+        kind: "note",
+        title: "Temporarily unavailable",
+        body: "Bixxie couldn't be reached. Your question wasn't lost; send it again in a moment.",
+      },
+      children: [],
+    },
   },
-  {
-    op: "add",
-    path: "/elements/notice",
-    value: {
+};
+
+const UNKNOWN_INFORMATION_SPEC: FallbackSpec = {
+  root: "answer",
+  elements: {
+    answer: {
+      type: "Answer",
+      props: { text: "I don't have that. I only know what is on this site." },
+      children: ["notice"],
+    },
+    notice: {
       type: "Notice",
       props: {
         kind: "unknown",
@@ -97,19 +100,22 @@ const UNKNOWN_INFORMATION_PATCHES = [
       children: [],
     },
   },
-] satisfies readonly JsonPatch[];
+};
 
-export const SECURITY_FALLBACK_JSONL = toJsonl(SECURITY_PATCHES);
-export const SERVICE_UNAVAILABLE_FALLBACK_JSONL = toJsonl(SERVICE_UNAVAILABLE_PATCHES);
-export const UNKNOWN_INFORMATION_FALLBACK_JSONL = toJsonl(UNKNOWN_INFORMATION_PATCHES);
+export const SECURITY_FALLBACK_JSON = toJson(SECURITY_SPEC);
+export const OFF_TOPIC_FALLBACK_JSON = toJson(OFF_TOPIC_SPEC);
+export const SERVICE_UNAVAILABLE_FALLBACK_JSON = toJson(SERVICE_UNAVAILABLE_SPEC);
+export const UNKNOWN_INFORMATION_FALLBACK_JSON = toJson(UNKNOWN_INFORMATION_SPEC);
 
 export function getBixxieFallback(kind: BixxieFallbackKind): string {
   switch (kind) {
     case "security":
-      return SECURITY_FALLBACK_JSONL;
+      return SECURITY_FALLBACK_JSON;
+    case "off-topic":
+      return OFF_TOPIC_FALLBACK_JSON;
     case "service-unavailable":
-      return SERVICE_UNAVAILABLE_FALLBACK_JSONL;
+      return SERVICE_UNAVAILABLE_FALLBACK_JSON;
     case "unknown":
-      return UNKNOWN_INFORMATION_FALLBACK_JSONL;
+      return UNKNOWN_INFORMATION_FALLBACK_JSON;
   }
 }

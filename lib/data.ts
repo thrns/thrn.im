@@ -5,12 +5,12 @@ export const PROFILE = {
   fullName: 'Tharun Pranav Sakthivel',
   displayName: 'TP',
   tagline: 'Build a compass to wander.',
-  studyIntro: "Hi there! I'm TP, an AI engineer studying a Combined Major in Science (Statistics, Physics, and Earth & Environmental Sciences) at UBC, expecting to graduate April 2027.",
-  recentWork: "Right now I'm an AI Engineer on UBC AgroBot, my current team — that's my most recent and ongoing role. Before that, my most recent completed job was AI Engineer at Berribot, where I built and ran the system that matches candidates to job descriptions and ranks them for recruiters.",
-  thirdSlatePocketlink: 'Before Berribot, I co-founded ThirdSlate, a platform that helps people learn more efficiently, and Pocketlink, where creators can publish, sell, and grow their work all in one place.',
-  hyrAgroBot: 'Earlier still, I was Founding Engineer at Hyr and Co-founder & CTO at Allotrix, plus internships at Uniffy.me, RK&GT Technologies, and Schneider Electric Sustainability Business.',
+  studyIntro: "Hi there! I'm TP, an AI engineer in my last year at UBC, studying Physics, Statistics, and Environmental Sciences.",
+  recentWork: 'Most recently, I was an AI Engineer at Berribot, where I built and ran the system that matches candidates to job descriptions and ranks them for recruiters.',
+  thirdSlatePocketlink: 'Before that, I co-founded ThirdSlate, a platform that helps people learn more efficiently, and Pocketlink, where creators can publish, sell, and grow their work all in one place.',
+  hyrAgroBot: 'I also worked as a Technical Consultant at Hyr and as an AI Engineer at UBC AgroBot, where I got to use AI on agriculture problems.',
   research: "These days I'm deep in the research side of AI, exploring it and building as I go.",
-  pastInterests: 'Outside work I swim, run, bike, lift, and play pickleball. Growing up it was track and field, basketball, football, and hockey (ran the 400m at district level), plus a lot of Model UN, around 68 conferences, chairing 13.',
+  pastInterests: 'In a past life, I was into electronics and circuitry, and I spent a lot of time on debate and athletics.',
   workLink: 'You can learn more about my work here.',
   email: EMAIL,
   // Explicit anchors so role recency never has to be inferred from prose or array
@@ -25,6 +25,8 @@ export const SOCIAL = {
   website: 'https://thrn.im',
 } as const;
 
+export type Course = { code: string; title: string };
+
 export type Education = {
   institution: string;
   campus: string;
@@ -33,7 +35,10 @@ export type Education = {
   components: string[];
   startDate: string;
   expectedGraduation: string;
-  coursework: Record<string, string[]>;
+  // Keyed by subject prefix (CPSC, MATH, PHYS, ...) — this is the exact,
+  // verified list of courses actually taken. Do not add or assume a course
+  // beyond what's listed here.
+  coursework: Record<string, Course[]>;
   certifications: string[];
   note: string;
 };
@@ -48,14 +53,96 @@ export const EDUCATION: Education = {
   startDate: '2022-09',
   expectedGraduation: '2027-04',
   coursework: {
-    Statistics: ['STAT 200', 'STAT 251', 'STAT 302', 'STAT 306', 'STAT 300'],
-    Physics: ['PHYS 203', 'PHYS 219', 'PHYS 310', 'PHYS 319', 'PHYS 404'],
-    Mathematics: ['MATH 100', 'MATH 101', 'MATH 200', 'MATH 221', 'MATH 302', 'MATH 307'],
-    'Computer Science': ['CPSC 110', 'CPSC 121', 'CPSC 210'],
-    Other: ['EOSC 310', 'EOSC 340', 'CPSC 344', 'CRWR 213', 'PHIL 331'],
+    ASIA: [
+      { code: 'ASIA 353', title: 'Introduction to Hindi Film' },
+      { code: 'ASIA 379', title: 'The Persian Book of Kings' },
+    ],
+    ATSC: [
+      { code: 'ATSC 201', title: 'Meteorology of Storms' },
+    ],
+    BIOL: [
+      { code: 'BIOL 111', title: 'Introduction to Modern Biology' },
+      { code: 'BIOL 342', title: 'Integrative Biology Laboratory' },
+    ],
+    CHEM: [
+      { code: 'CHEM 121', title: 'Structure and Bonding in Chemistry' },
+      { code: 'CHEM 355', title: 'Chemistry Integrated Laboratory' },
+    ],
+    CPSC: [
+      { code: 'CPSC 110', title: 'Computation, Programs, and Programming' },
+      { code: 'CPSC 121', title: 'Models of Computation' },
+      { code: 'CPSC 210', title: 'Software Construction' },
+      { code: 'CPSC 344', title: 'Introduction to Human Computer Interaction Methods' },
+    ],
+    CRWR: [
+      { code: 'CRWR 200', title: 'Introduction to Creative Writing' },
+      { code: 'CRWR 213', title: 'Introduction to Writing for the New Media' },
+    ],
+    DSCI: [
+      { code: 'DSCI 100', title: 'Introduction to Data Science' },
+    ],
+    EOSC: [
+      { code: 'EOSC 270', title: 'Marine Ecosystems' },
+      { code: 'EOSC 310', title: 'The Earth and the Solar System' },
+      { code: 'EOSC 326', title: 'Earth and Life Through Time' },
+      { code: 'EOSC 340', title: 'Climate Change: Causes and Solutions' },
+      { code: 'EOSC 442', title: 'Climate Measurement and Analysis' },
+    ],
+    FMST: [
+      { code: 'FMST 210', title: 'Family Context of Human Development' },
+    ],
+    MATH: [
+      { code: 'MATH 100', title: 'Differential Calculus with Applications' },
+      { code: 'MATH 101', title: 'Integral Calculus with Applications' },
+      { code: 'MATH 102', title: 'Differential Calculus with Applications to Life Sciences' },
+      { code: 'MATH 103', title: 'Integral Calculus with Applications to Life Sciences' },
+      { code: 'MATH 104', title: 'Differential Calculus with Applications to Commerce and Social Sciences' },
+      { code: 'MATH 105', title: 'Integral Calculus with Applications to Commerce and Social Sciences' },
+      { code: 'MATH 110', title: 'Differential Calculus' },
+      { code: 'MATH 120', title: 'Honours Differential Calculus' },
+      { code: 'MATH 121', title: 'Honours Integral Calculus' },
+      { code: 'MATH 180', title: 'Differential Calculus with Applications' },
+      { code: 'MATH 184', title: 'Differential Calculus for Social Science and Commerce' },
+      { code: 'MATH 200', title: 'Calculus III' },
+      { code: 'MATH 220', title: 'Mathematical Proof' },
+      { code: 'MATH 221', title: 'Matrix Algebra' },
+      { code: 'MATH 302', title: 'Introduction to Probability' },
+      { code: 'MATH 307', title: 'Applied Linear Algebra' },
+    ],
+    PHYS: [
+      { code: 'PHYS 117', title: 'Dynamics and Waves' },
+      { code: 'PHYS 118', title: 'Electricity, Light and Radiation' },
+      { code: 'PHYS 119', title: 'Experimental Physics Lab I' },
+      { code: 'PHYS 203', title: 'Thermal Physics I' },
+      { code: 'PHYS 219', title: 'Intermediate Experimental Physics I' },
+      { code: 'PHYS 309', title: 'Electrical Laboratory' },
+      { code: 'PHYS 310', title: 'Machine Learning for Physics and Astronomy Data Analysis' },
+      { code: 'PHYS 319', title: 'Electronics Laboratory' },
+      { code: 'PHYS 404', title: 'Introduction to Medical Physics' },
+      { code: 'PHYS 409', title: 'Experimental Physics' },
+    ],
+    POLI: [
+      { code: 'POLI 369', title: 'Topics in International Security' },
+    ],
+    SCIE: [
+      { code: 'SCIE 113', title: 'First-Year Seminar in Science' },
+      { code: 'SCIE 300', title: 'Communicating Science' },
+    ],
+    STAT: [
+      { code: 'STAT 200', title: 'Elementary Statistics for Applications' },
+      { code: 'STAT 251', title: 'Introductory Probability and Statistics' },
+      { code: 'STAT 300', title: 'Intermediate Statistics for Applications' },
+      { code: 'STAT 306', title: 'Finding Relationships in Data' },
+    ],
+    VISA: [
+      { code: 'VISA 110', title: 'Foundation Studio: Digital Media' },
+    ],
+    WRDS: [
+      { code: 'WRDS 150', title: 'Writing and Research in the Disciplines' },
+    ],
   },
   certifications: ['TCPS 2: CORE-2022 — Course on Research Ethics (completed September 2026)'],
-  note: 'No verified awards or scholarships are on record. Do not state or estimate GPA.',
+  note: 'No verified awards or scholarships are on record. Do not state or estimate GPA. Only courses explicitly listed in coursework were taken — do not infer or add others.',
 };
 
 export type Publication = { title: string; venue: string; year: string; coauthors: string; doi: string; context: string };
@@ -257,7 +344,7 @@ Neo4j|Graph database|Tried it, but haven't had a project that needed a graph lat
 SearXNG|Metasearch|Used it for search in a few projects, nothing needs it right now.|I|https://docs.searxng.org
 Crawlee|Web scraping|Used it for scraping, but nothing calls for it at the moment.|I|https://crawlee.dev
 Linear|Issue tracking|Never really became part of my workflow.|I|https://linear.app`.split('\n').map(l => { const [name, purpose, thoughts, k, url] = l.split('|'); return { name, purpose, thoughts, k, url, status: { A: 'Active', P: 'Planned', I: 'Inactive' }[k], label: { A: 'Active', P: 'Planned', I: 'Inactive' }[k], cat: STACK_CAT[name] || 'Other' }; });
-export const GREETING = "Hi, I'm Bixxie, an assistant who knows Tharun Pranav Sakthivel's work. Pick a topic or ask anything.";
+export const GREETING = "Hi, I'm Bixxie. I can answer questions about Tharun's work, projects and stack. I only know what is on this site.";
 
 export type Role = {
   rail: string;
@@ -283,12 +370,12 @@ export type Role = {
 export const ROLES: Role[] = [
   {
     rail: 'var(--foreground)',
-    title: "Machine Learning Engineer | Internal Operations & Technical Lead",
+    title: "AI Engineer | Technical Operations & Partnerships Lead",
     altTitle: "Corporate Relations Lead",
     company: "UBC AgroBot",
     url: "https://ubcagrobot.com/",
     summary: "Spent a few years on UBC's robotics team training the vision models that let the robot see what's growing in a field.",
-    summary2: "Took on internal operations, technical leadership, and corporate relations for AgroBot, which meant talking to sponsors as much as to engineers.",
+    summary2: "Took on technical operations and partnerships for AgroBot, which meant talking to sponsors as much as to engineers.",
     highlight: '',
     wins: [
       "Computer vision: worked on agricultural-robotics perception models including YOLO and Faster R-CNN, reaching approximately 86% mAP across 8,000+ images.",
@@ -296,7 +383,7 @@ export const ROLES: Role[] = [
       "Partnerships: helped secure 6 partnerships and $8K+ in commitments while maintaining an 80+ prospect pipeline.",
       "Operations: worked across 7 team leads, 25+ stakeholders, and a $15K+ operations budget.",
     ],
-    stack: "Python, PyTorch, OpenCV, YOLO, Faster R-CNN, computer vision, dataset/annotation workflows, robotics/ROS-related workflows",
+    stack: '',
     employmentType: "Part-time, student engineering/design team",
     startDate: '2023-10',
     endDate: null,
@@ -314,7 +401,7 @@ export const ROLES: Role[] = [
       "LLM evaluation: built Langfuse-based tracing, prompt versioning, and testing with 800+ LLM-as-judge tests, reducing review workflows from hours to minutes.",
       "Production infrastructure: deployed services on Docker/GCP/GitHub Actions/GKE/Cloud Run at roughly 99.8% availability, supporting 1K+ applicant submissions/day.",
     ],
-    stack: "Python, TypeScript, Node.js, FastAPI, BM25, Gemini embeddings, Qwen, LambdaMART, Langfuse, Docker, GCP Artifact Registry, GKE, Cloud Run, Celery, Redis, GitHub Actions, W&B",
+    stack: '',
     employmentType: "Full-time",
     startDate: '2026-01',
     endDate: '2026-04',
@@ -333,14 +420,14 @@ export const ROLES: Role[] = [
       "Evaluation: created a 500+ case evaluation system reaching 94% response relevance and 89% RAGAS faithfulness.",
       "Quality: reduced hallucinations by roughly 38% and manual QA by roughly 55% while maintaining about 99.8% uptime.",
     ],
-    stack: "Python, FastAPI, LangGraph, Gemini 2.5 Pro/Flash, Mem0, pgvector, OpenAI embeddings, RAGAS, Supabase/Postgres, Docker, AWS EKS, GitHub Actions, Next.js",
+    stack: '',
     employmentType: "Founder",
-    startDate: '2025-04',
-    endDate: '2026-03',
+    startDate: '2025-03',
+    endDate: '2026-01',
   },
   {
     rail: 'var(--border)',
-    title: "Software Engineering Intern",
+    title: "Software Engineer",
     company: "Uniffy.me",
     url: "https://uniffy.me/",
     summary: "Spent a summer on the backend of an insurance platform, connecting providers so things just worked for the people using it.",
@@ -351,7 +438,7 @@ export const ROLES: Role[] = [
       "Worked on infrastructure serving 10K+ users at 99.9% uptime.",
       "Implemented access control with 3 permission tiers, RBAC, and audit logging.",
     ],
-    stack: "Backend engineering, APIs, RBAC, audit logging, CDN/edge-related infrastructure",
+    stack: '',
     employmentType: "Internship",
     startDate: '2025-05',
     endDate: '2025-08',
@@ -377,8 +464,8 @@ export const ROLES: Role[] = [
   },
   {
     rail: 'var(--border)',
-    title: "Co-founder & CTO",
-    altTitle: "Software Engineer",
+    title: "Co-founder & Software Engineer",
+    altTitle: "CTO",
     company: "Allotrix",
     url: "https://github.com/thrns/allotrix",
     summary: "Started Allotrix to take the headaches out of organizing conferences, then watched it get used at real events.",
@@ -412,7 +499,7 @@ export const ROLES: Role[] = [
   },
   {
     rail: 'var(--border)',
-    title: "Machine Learning Engineer Intern",
+    title: "Software Engineer",
     company: "RK&GT Technologies",
     url: "https://rkgt-tech.com/",
     summary: "Joined RK&GT for the summer and worked on two things: helping software find what's inside PDFs, and tracking where tagged items sit around an office.",
@@ -423,14 +510,14 @@ export const ROLES: Role[] = [
       "Reduced processing/latency by approximately 20%.",
       "Built validation/reporting tooling that caught 40+ defects and reduced reporting time around 45%.",
     ],
-    stack: "Python, TensorFlow, Keras, spaCy, React, REST APIs, PostgreSQL",
+    stack: '',
     employmentType: "Internship",
     startDate: '2023-05',
     endDate: '2023-09',
   },
   {
     rail: 'var(--border)',
-    title: "Machine Learning Engineer Intern",
+    title: "Machine Learning Engineer",
     company: "Schneider Electric Sustainability Business",
     url: "https://www.se.com/",
     summary: "Worked on a computer vision project during COVID that helped check mask use and distancing.",
@@ -461,6 +548,6 @@ export const CASE_TIMEFRAMES: Record<string, string> = {
   pocketlink: 'Dec 2023 – Feb 2025',
   rkgt: 'May 2023 – Sep 2023',
   tekkscope: 'Dates unknown',
-  thirdslate: 'Apr 2025 – Mar 2026',
+  thirdslate: 'Mar 2025 – Jan 2026',
   tracebox: 'Dates unknown',
 };

@@ -8,31 +8,6 @@ import { EMAIL, GUIDE_L, GUIDE_R } from '@/lib/chrome';
 import { useChrome } from './ChromeContext';
 import { Modal, ModalHeader, ModalRow } from './Modal';
 
-export function InfoDialog() {
-  const { s, closeInfo } = useChrome();
-  return (
-    <Modal open={s.info} onClose={closeInfo} zIndex={50} label="About this chat" maxWidth={640} padding="32px 32px 28px" dataR="dlg">
-      <ModalHeader
-        title="About this chat" titleStyle="font-size:24px;line-height:32px"
-        subtitle="A generative UI assistant that answers from this site, and nothing else." subtitleStyle="margin:10px 0 0;max-width:var(--measure)"
-        closeLabel="Close info" onClose={closeInfo}
-      />
-      <div style={css('margin-top:32px;border-top:1px solid var(--foreground)')}>
-        {([['What it is', 'Ask about my roles, projects, case studies, stack or availability. Bixxie builds a small interface around the answer instead of returning a wall of text.'], ['Why', 'A recruiter may want outcomes, an engineer may want architecture, and someone else may want the projects. The response adapts to the question.'], ['Limits', 'It only knows what is published on this site. If something is missing or unclear, it says so.']] as const).map(([k, v]) => (
-          <ModalRow key={k} align="start">
-            <Tag>{k}</Tag>
-            <p className="p light" style={css('margin:0')}>{v}</p>
-          </ModalRow>
-        ))}
-      </div>
-      <div style={css('margin-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px')}>
-        <p className="p light" style={css('margin:0')}>Found a mistake? <TextLink href={'mailto:' + EMAIL}>Contact me</TextLink></p>
-        <Button variant="primary" size="default" onClick={closeInfo}>Start chatting</Button>
-      </div>
-    </Modal>
-  );
-}
-
 export function EmailDialog() {
   const { s, closeEmail, copyAddr } = useChrome();
   return (

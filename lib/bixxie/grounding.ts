@@ -1,4 +1,5 @@
 import { CASES, CASE_TIMEFRAMES, EDUCATION, PERSONAL, PROFILE, PROJECTS, PUBLICATIONS, RECRUITER_INFO, ROLES, STACK } from '@/lib/data';
+import { BIXXIE_KNOWLEDGE } from '@/lib/bixxie/knowledge';
 import { buildData as buildBerribotData } from '@/lib/case-studies/berribot';
 import { buildData as buildHyrData } from '@/lib/case-studies/hyr';
 import { buildData as buildPocketlinkData } from '@/lib/case-studies/pocketlink';
@@ -9,7 +10,7 @@ import { buildData as buildTraceboxData } from '@/lib/case-studies/tracebox';
 
 export type GroundingSource = {
   id: string;
-  type: 'profile' | 'contact' | 'role' | 'project' | 'stack' | 'case-study' | 'personal' | 'education' | 'publication' | 'recruiting';
+  type: 'profile' | 'contact' | 'role' | 'project' | 'stack' | 'case-study' | 'personal' | 'education' | 'publication' | 'recruiting' | 'knowledge';
   title: string;
   text: string;
   href?: string;
@@ -86,7 +87,7 @@ const EDUCATION_SOURCE: GroundingSource = {
     `Degree: ${EDUCATION.degree}`,
     `Program: ${EDUCATION.program} — ${EDUCATION.components.join(', ')}`,
     `Dates: ${formatMonthYear(EDUCATION.startDate)} – expected ${formatMonthYear(EDUCATION.expectedGraduation)}`,
-    ...Object.entries(EDUCATION.coursework).map(([area, courses]) => `${area} coursework: ${courses.join(', ')}`),
+    ...Object.entries(EDUCATION.coursework).map(([subject, courses]) => `${subject} coursework: ${courses.map((c) => `${c.code} (${c.title})`).join(', ')}`),
     `Certifications: ${EDUCATION.certifications.join(', ')}`,
     EDUCATION.note,
   ].join('\n'),
@@ -229,6 +230,37 @@ function createSources(): GroundingSource[] {
     keywords: topic.keywords,
   }));
 
+  // The master Q&A knowledge base (675 curated answers, already sanitized for
+  // public use — see lib/bixxie/knowledge.ts). Each entry becomes its own
+  // searchable source so a specific question can surface its specific answer
+  // instead of relying on the coarser hand-built sources above.
+  const knowledgeSources: GroundingSource[] = BIXXIE_KNOWLEDGE.map((item) => {
+    const sectionLabel = item.section.replace(/^[\d–-]+\s*·\s*/, '');
+    return {
+      id: `knowledge:${item.id}`,
+      type: 'knowledge',
+      // Intentionally NOT the full question: scoreSource gives a flat +12
+      // "exact phrase" bonus whenever the query is a whole-word substring of
+      // `title`. A short, shared label (the section name) keeps that bonus
+      // meaningful for real canonical-name matches (e.g. "UBC AgroBot")
+      // instead of letting almost any single-word query trivially match one
+      // of 675 full-sentence questions and drown out the curated sources.
+      // `title` isn't serialized to the model anyway — only `id` and `text`
+      // are — so this costs nothing on the output side.
+      title: sectionLabel,
+      // Markdown bold markers are stripped: this text is retrieval context, not
+      // output — Bixxie writes its own JSON-render blocks from the facts here,
+      // it never copies this markdown straight into a TextBlock.
+      text: [
+        `Q: ${item.question}`,
+        `A: ${item.answer.replace(/\*\*/g, '')}`,
+        item.status === 'conflict' && 'Note: sources disagree on this — state that a discrepancy exists rather than picking one version.',
+        item.status === 'unknown' && 'Note: this is not currently documented — do not invent an answer.',
+      ].filter(Boolean).join('\n'),
+      keywords: [...tokenize(item.question), ...tokenize(sectionLabel)],
+    };
+  });
+
   return [
     PROFILE_SOURCE,
     CONTACT_SOURCE,
@@ -240,14 +272,26 @@ function createSources(): GroundingSource[] {
     ...stackSources,
     ...caseSources,
     ...personalSources,
+    ...knowledgeSources,
   ];
 }
 
-const SOURCES = createSources();
+// Declared before createSources() runs (not just before its call site) because
+// the knowledge base turns each of 675 full questions into keywords — without
+// filtering common auxiliary/question words out of the *query* here, a query
+// like "what courses did you take" scores every knowledge item whose question
+// also happens to contain "did"/"take" as if it were a real topical match,
+// drowning out the curated, type-specific sources (education, roles, etc.).
 const STOPWORDS = new Set([
   'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'how', 'i', 'in', 'is', 'it',
   'me', 'my', 'of', 'on', 'or', 'the', 'to', 'what', 'where', 'who', 'with', 'you', 'your',
+  'did', 'do', 'does', 'doing', 'done', 'have', 'has', 'had', 'having', 'can', 'could', 'would',
+  'will', 'shall', 'should', 'might', 'may', 'must', 'am', 'was', 'were', 'been', 'being', 'not',
+  'no', 'if', 'so', 'than', 'that', 'this', 'these', 'those', 'there', 'here', 'just', 'really',
+  'actually', 'please',
 ]);
+
+const SOURCES = createSources();
 
 function normalizeQuery(query: string): { tokens: string[]; text: string } {
   const tokens = [...new Set(

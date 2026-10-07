@@ -4,6 +4,7 @@ import { describe, expect, test } from "bun:test";
 import {
   createStreamingRedactor,
   isExtractionAttempt,
+  isOffTopicTask,
   normalizeUserInput,
   validateConversation,
 } from "@/lib/bixxie/security";
@@ -115,14 +116,59 @@ describe("Bixxie extraction filter", () => {
 });
 
 describe("Bixxie streaming redaction", () => {
-  test("redacts case-insensitively across chunks and preserves valid JSONL", () => {
+  // The model's output is now a single JSON object produced under
+  // structured-output constrained decoding (see provider.ts), not
+  // hand-formatted JSONL, so the redactor no longer needs to parse or
+  // repair JSON at all — it's a plain, transport-agnostic substring
+  // replace over the raw text stream.
+  test("redacts case-insensitively and preserves the surrounding JSON", () => {
     const redactor = createStreamingRedactor(["Secret+Key"]);
-    const first = redactor.push('{"text":"The secret+');
-    const second = redactor.push('key is hidden","ok":true}\n');
-    const last = redactor.flush();
-    const records = `${first}${second}${last}`.trim().split("\n").map((line) => JSON.parse(line));
+    const output = redactor.push('{"text":"The secret+key is hidden","ok":true}') + redactor.flush();
+    const parsed = JSON.parse(output);
 
-    expect(records[0].text).toBe("The Bixxie is hidden");
-    expect(records[0].ok).toBe(true);
+    expect(parsed.text).toBe("The Bixxie is hidden");
+    expect(parsed.ok).toBe(true);
+  });
+
+  test("redacts a protected term even when it is split across chunk boundaries", () => {
+    const redactor = createStreamingRedactor(["Gemini"]);
+    const first = redactor.push('{"model":"Gem');
+    const second = redactor.push('ini-3.5-flash-lite"}');
+    const output = first + second + redactor.flush();
+
+    expect(output).toContain("Bixxie-3.5-flash-lite");
+    expect(output).not.toContain("Gemini");
+  });
+
+  test("redacts a term that appears outside any quoted string too", () => {
+    // Confirms this is a plain text replace, not a JSON-value walk — a
+    // protected term anywhere in the stream is caught, not just inside a
+    // string value.
+    const redactor = createStreamingRedactor(["Gemini"]);
+    const output = redactor.push("Gemini says hello") + redactor.flush();
+
+    expect(output).toBe("Bixxie says hello");
+  });
+
+  test("passes text through unchanged when there are no protected terms", () => {
+    const redactor = createStreamingRedactor([]);
+    const text = '{"root":"main","elements":{}}';
+    const output = redactor.push(text) + redactor.flush();
+
+    expect(output).toBe(text);
+  });
+});
+
+describe("isOffTopicTask", () => {
+  test("flags general task requests unrelated to TP", () => {
+    expect(isOffTopicTask("give print statement in pythgon for my name")).toBe(true);
+    expect(isOffTopicTask("write a poem about the sea")).toBe(true);
+    expect(isOffTopicTask("generate a regex for emails")).toBe(true);
+  });
+
+  test("lets questions about TP and his work through", () => {
+    expect(isOffTopicTask("what python projects has he built?")).toBe(false);
+    expect(isOffTopicTask("show me Tharun's code for Tracebox")).toBe(false);
+    expect(isOffTopicTask("hi")).toBe(false);
   });
 });

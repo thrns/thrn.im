@@ -139,6 +139,22 @@ export function isExtractionAttempt(text: string): boolean {
   return false;
 }
 
+const TASK_REQUEST =
+  /\b(?:write|give|generate|create|make|show|print|code|build|draft|compose|translate|solve|calculate|debug|fix|explain|teach)\b.{0,40}\b(?:code|script|program|function|snippet|statement|syntax|regex|query|sql|python|pythgon|pygthon|javascript|typescript|java|c\+\+|rust|html|css|essay|poem|story|joke|song|email|letter|recipe|equation|homework|assignment)\b/i;
+const ABOUT_TP = /\b(?:tharun|tp|pranav|sakthivel|bixxie|his|he|him|portfolio|resume|projects?|case stud(?:y|ies)|experience|stack)\b/i;
+
+/**
+ * Detects general-purpose task requests (write code, essays, jokes, ...) that
+ * have nothing to do with TP. Bixxie is a portfolio assistant, not a free
+ * public LLM; answering these lets visitors burn model quota on anything.
+ * Conservative on purpose: anything that mentions TP or his work passes
+ * through, and the system prompt's scope rule covers the fuzzy remainder.
+ */
+export function isOffTopicTask(text: string): boolean {
+  const normalized = normalizeUserInput(text);
+  return TASK_REQUEST.test(normalized) && !ABOUT_TP.test(normalized);
+}
+
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -150,66 +166,49 @@ function readProtectedValues(): string[] {
     .filter(Boolean);
 }
 
-function redactJsonValue(value: unknown, matcher: RegExp): unknown {
-  if (typeof value === "string") return value.replace(matcher, "Bixxie");
-  if (Array.isArray(value)) return value.map((item) => redactJsonValue(item, matcher));
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, redactJsonValue(item, matcher)]),
-    );
-  }
-  return value;
-}
-
-function redactJsonLine(line: string, matcher: RegExp | null): string {
-  if (!matcher || !line.trim()) return line;
-
-  try {
-    const parsed: unknown = JSON.parse(line);
-    return JSON.stringify(redactJsonValue(parsed, matcher));
-  } catch {
-    // The line can be invalid/incomplete JSON when the model's output gets
-    // cut off mid-element (e.g. hitting the token budget) rather than
-    // genuinely malformed — the client already salvages a truncated answer,
-    // so redact as plain text instead of throwing away the whole response.
-    return line.replace(matcher, "Bixxie");
-  }
-}
-
+/**
+ * Redacts protected terms from a streamed response.
+ *
+ * The model's output is now a single JSON object produced under Gemini's
+ * structured-output (constrained decoding) mode — see provider.ts — rather
+ * than hand-formatted JSONL, so this no longer needs to parse, repair, or
+ * otherwise understand JSON at all: a protected term (a model/provider
+ * name) is redacted the same way wherever it appears, whether inside a
+ * quoted JSON string or not. That makes this a plain substring replace over
+ * the raw text stream, with a small holdback buffer so a term split across
+ * two network chunks still gets caught.
+ */
 export function createStreamingRedactor(protectedValues = readProtectedValues()) {
   const terms = [...new Set(protectedValues.map((term) => term.trim()).filter(Boolean))]
     .sort((left, right) => right.length - left.length);
   const matcher = terms.length > 0
     ? new RegExp(terms.map(escapeRegExp).join("|"), "giu")
     : null;
+  // Hold back enough trailing characters that a term split across a chunk
+  // boundary (e.g. "...Gem" | "ini...") still gets matched once the rest
+  // arrives, instead of letting the first half leak through unredacted.
+  const holdbackLength = Math.max(0, ...terms.map((term) => term.length - 1));
 
-  let rollingBuffer = "";
+  let buffer = "";
   let flushed = false;
 
   return {
     push(chunk: string): string {
       if (flushed) throw new Error("Cannot write to a flushed redaction stream.");
-      rollingBuffer += chunk;
+      buffer += chunk;
 
-      let output = "";
-      let newlineIndex = rollingBuffer.indexOf("\n");
-      while (newlineIndex >= 0) {
-        const line = rollingBuffer.slice(0, newlineIndex);
-        const carriageReturn = line.endsWith("\r");
-        const content = carriageReturn ? line.slice(0, -1) : line;
-        output += `${redactJsonLine(content, matcher)}${carriageReturn ? "\r\n" : "\n"}`;
-        rollingBuffer = rollingBuffer.slice(newlineIndex + 1);
-        newlineIndex = rollingBuffer.indexOf("\n");
-      }
+      const emitLength = Math.max(0, buffer.length - holdbackLength);
+      const toEmit = buffer.slice(0, emitLength);
+      buffer = buffer.slice(emitLength);
 
-      return output;
+      return matcher ? toEmit.replace(matcher, "Bixxie") : toEmit;
     },
 
     flush(): string {
       if (flushed) return "";
       flushed = true;
-      const output = redactJsonLine(rollingBuffer, matcher);
-      rollingBuffer = "";
+      const output = matcher ? buffer.replace(matcher, "Bixxie") : buffer;
+      buffer = "";
       return output;
     },
   };

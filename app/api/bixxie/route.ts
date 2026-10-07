@@ -1,6 +1,7 @@
 import {
   createStreamingRedactor,
   isExtractionAttempt,
+  isOffTopicTask,
   validateConversation,
   type ConversationMessage,
 } from "@/lib/bixxie/security";
@@ -104,7 +105,7 @@ async function createModelTextStream({ system, message, signal }: ModelStreamReq
     system,
     message,
     temperature: 0.2,
-    maxOutputTokens: 3000,
+    maxOutputTokens: 3500,
     signal,
   });
 
@@ -168,17 +169,29 @@ function createRedactedTextStream(
   const redactor = createStreamingRedactor();
   let pendingFirstChunk: IteratorResult<string> | undefined = firstChunk;
   let cancelled = false;
+  // The response body is a single JSON object now (structured output — see
+  // provider.ts), not independent JSONL lines, so a fallback can only be
+  // enqueued as the *entire* body: appending a second complete JSON object
+  // after any real bytes already sent would corrupt the stream the client
+  // is parsing. If generation fails after real content went out, leave it
+  // alone instead — the client's own truncation handling (see stream.ts)
+  // already salvages whatever of that partial-but-genuine answer completed,
+  // which is strictly better than throwing it away for a generic error.
+  let sentAnyOutput = false;
 
   const enqueueRedacted = (controller: ReadableStreamDefaultController<Uint8Array>, text: string) => {
     const output = redactor.push(text);
-    if (output && !cancelled) controller.enqueue(encoder.encode(output));
+    if (output && !cancelled) {
+      controller.enqueue(encoder.encode(output));
+      sentAnyOutput = true;
+    }
   };
 
   const enqueueSafeFallback = (controller: ReadableStreamDefaultController<Uint8Array>) => {
-    if (cancelled) return;
+    if (cancelled || sentAnyOutput) return;
     const fallbackRedactor = createStreamingRedactor();
     const fallback = getBixxieFallback("service-unavailable");
-    const output = fallbackRedactor.push(`${fallback}\n`) + fallbackRedactor.flush();
+    const output = fallbackRedactor.push(fallback) + fallbackRedactor.flush();
     if (output) controller.enqueue(encoder.encode(output));
   };
 
@@ -267,6 +280,10 @@ export async function handleBixxieRequest(
   const latestMessage = messages[messages.length - 1];
   if (isExtractionAttempt(latestMessage.content)) {
     return textResponse(getBixxieFallback("security"));
+  }
+
+  if (isOffTopicTask(latestMessage.content)) {
+    return textResponse(getBixxieFallback("off-topic"));
   }
 
   try {

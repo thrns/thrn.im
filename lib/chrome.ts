@@ -23,6 +23,16 @@ export const GUIDE_R: [string, string][] = [['Ask Bixxie', '/'], ['Email me', 'M
 
 export const SUGS = ['Me', 'Projects', 'Skills', 'Fun', 'Contact', 'More'];
 export const SUG_ICON: Record<string, string> = { Me: 'LucideGraduationCap', Projects: 'LucideBriefcase', Skills: 'LucideLayers', Fun: 'LucideSparkles', Contact: 'LucideMail', More: 'LucideEllipsis' };
+export const MORE_QUESTIONS = [
+  "What are Tharun's hobbies and interests?",
+  'What are some fun facts and quirks about Tharun?',
+  "What is Tharun's personality like?",
+  "What are Tharun's favorite movies, music, and food?",
+  'What values and beliefs guide Tharun?',
+  'Where did Tharun grow up, and how did he get into coding?',
+  'What sports did Tharun play growing up?',
+  'What is Tharun focused on right now?',
+];
 
 export const hide = (open: boolean) => ({ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' }) as any;
 export const dlgTf = (open: boolean) => (open ? 'none' : 'translateY(12px) scale(.98)');

@@ -1,20 +1,27 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { defineRegistry } from "@json-render/react";
+import mermaid from "mermaid";
 
-import { DataRow, RowLink } from "@/components/common/DataTable";
 import StatusPill from "@/components/common/StatusPill";
 import { Tag } from "@/components/common/Tag";
 import TextLink from "@/components/common/TextLink";
+import { Bubble, Icon } from "@/components/ui";
+import BixxieMark from "@/components/bixxie/BixxieMark";
 import { CASES, EDUCATION, PROJECTS, ROLES, STACK } from "@/lib/data";
 import { css } from "@/lib/css";
 import { EMAIL, PATH } from "@/lib/chrome";
 import { catalog } from "@/lib/bixxie/catalog";
 
-type BixxieActions = { onAsk: (question: string) => void };
+type BixxieActions = { onAsk: (question: string) => void; onNavigate: () => void };
 
 export const BixxieActionContext = createContext<BixxieActions | null>(null);
+
+// strict + htmlLabels:false reject click/href callbacks and raw HTML in node
+// labels regardless of what the model's definition string tries to include —
+// defense-in-depth on top of the prompt-level instruction not to write them.
+mermaid.initialize({ startOnLoad: false, securityLevel: "strict", htmlLabels: false, theme: "neutral" });
 
 const LINK_DESTINATIONS = [
   { key: "email", label: "Email", href: `mailto:${EMAIL}` },
@@ -27,50 +34,45 @@ const LINK_DESTINATIONS = [
   { key: "resume", label: "Resume", href: PATH.resume },
 ] as const;
 
+const CARD = "min-width:0;box-sizing:border-box;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:14px";
+const RULE = "border-top:1px solid var(--border)";
+
 export const { registry } = defineRegistry(catalog, {
   components: {
+    // The root: Bixxie's chat message. `text` is the bubble; the children are
+    // follow-on bubbles and structured blocks stacked beneath it.
     Answer: ({ props, children }) => (
-      <div style={css("width:100%;display:flex;flex-direction:column;gap:20px")}>
-        <div>
-          {props.label && <span className="eyebrow">{props.label}</span>}
-          <h2 className="h4" style={css(`margin:${props.label ? "8px" : "0"} 0 0;font-weight:var(--weight-semibold)`)}>{props.title}</h2>
-          {props.intro && (
-            <p className="p light" style={css("margin:10px 0 0;max-width:var(--measure)")}>
-              {props.intro}
-            </p>
-          )}
+      <div style={css("width:100%;display:flex;align-items:flex-start;gap:8px")}>
+        <div style={css("padding-top:8px")}><BixxieMark /></div>
+        <div style={css("flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px")}>
+          {props.text.trim() && <Bubble variant="secondary">{props.text}</Bubble>}
+          {children}
         </div>
-        {children}
       </div>
     ),
     Section: ({ props, children }) => (
-      <section style={css("border-top:1px solid var(--border);padding-top:18px;display:flex;flex-direction:column;gap:12px")}>
-        {props.label && <span className="eyebrow">{props.label}</span>}
-        {props.title && <h4 className="h4" style={css(`margin:${props.label ? "10px" : "0"} 0 0`)}>{props.title}</h4>}
+      <section style={css(`width:100%;display:flex;flex-direction:column;gap:8px;padding-top:6px`)}>
+        {(props.label || props.title) && (
+          <div style={css("display:flex;flex-direction:column;gap:2px")}>
+            {props.label && <span className="eyebrow">{props.label}</span>}
+            {props.title && <h4 className="p" style={css("margin:0;font-weight:var(--weight-semibold)")}>{props.title}</h4>}
+          </div>
+        )}
         {children}
       </section>
     ),
     TextBlock: ({ props }) => (
-      <p
-        className="p light"
-        style={css(`margin:0;max-width:var(--measure);color:${props.tone === "muted" ? "var(--muted-foreground)" : "var(--foreground)"}`)}
-      >
+      <Bubble variant="secondary" style={props.tone === "muted" ? { color: "var(--muted-foreground)" } : undefined}>
         {props.text}
-      </p>
+      </Bubble>
     ),
     Metrics: ({ props }) => (
-      <div
-        data-bixxie="metrics"
-        style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px")}
-      >
+      <div data-bixxie="metrics" style={css(`width:100%;${CARD};padding:0;overflow:hidden;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))`)}>
         {props.items.map((item, index) => (
-          <div
-            key={`${item.label}-${index}`}
-            style={css("min-width:0;background:color-mix(in srgb,var(--foreground) 9%,var(--card));border:1px solid color-mix(in srgb,var(--foreground) 14%,var(--card));border-radius:6px;padding:12px 14px")}
-          >
-            <div style={css("font-size:18px;line-height:24px;font-weight:var(--weight-semibold);letter-spacing:-.011em")}>{item.value}</div>
-            <div className="p light" style={css("margin-top:6px")}>{item.label}</div>
-            {item.note && <div className="p-sm light muted" style={css("margin-top:2px")}>{item.note}</div>}
+          <div key={`${item.label}-${index}`} style={css(`min-width:0;padding:12px 14px;box-shadow:inset 1px 0 0 var(--border),inset 0 1px 0 var(--border);margin:-1px 0 0 -1px`)}>
+            <div style={css("font-size:22px;line-height:28px;font-weight:var(--weight-semibold);letter-spacing:-.011em")}>{item.value}</div>
+            <div className="eyebrow" style={css("margin-top:6px")}>{item.label}</div>
+            {item.note && <div className="p-mini light muted" style={css("margin-top:3px")}>{item.note}</div>}
           </div>
         ))}
       </div>
@@ -80,27 +82,25 @@ export const { registry } = defineRegistry(catalog, {
       if (!role) return null;
 
       return (
-        <div>
-          {props.showRole !== false && <div className="p" style={css("font-weight:var(--weight-semibold)")}>{role.title}</div>}
-          <div className="p-sm muted" style={css("margin-top:2px")}>{role.company}</div>
+        <div style={css(`width:100%;${CARD}`)}>
+          <div style={css("display:flex;align-items:baseline;justify-content:space-between;gap:12px")}>
+            <span className="p" style={css("font-weight:var(--weight-semibold)")}>{props.showRole !== false ? role.title : role.company}</span>
+            {props.showRole !== false && <span className="p-sm muted">{role.company}</span>}
+          </div>
           {props.showSummary !== false && (
-            <p className="p light" style={css("margin:10px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>
-              {role.summary}
-            </p>
+            <p className="p-sm light" style={css("margin:8px 0 0;color:var(--muted-foreground)")}>{role.summary}</p>
           )}
         </div>
       );
     },
     Education: ({ props }) => (
-      <div>
+      <div style={css(`width:100%;${CARD}`)}>
         <div className="p" style={css("font-weight:var(--weight-semibold)")}>{EDUCATION.degree}, {EDUCATION.program}</div>
-        <div className="p-sm muted" style={css("margin-top:2px")}>{EDUCATION.institution} — {EDUCATION.campus}</div>
-        <p className="p light" style={css("margin:10px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>
-          {EDUCATION.components.join(', ')}
-        </p>
+        <div className="p-sm muted" style={css("margin-top:2px")}>{EDUCATION.institution}, {EDUCATION.campus}</div>
+        <p className="p-sm light" style={css("margin:8px 0 0;color:var(--muted-foreground)")}>{EDUCATION.components.join(", ")}</p>
         {props.showCoursework !== false && (
-          <div style={css("margin-top:10px;display:flex;flex-wrap:wrap;gap:8px")}>
-            {Object.values(EDUCATION.coursework).flat().map((course) => <Tag key={course} size="sm">{course}</Tag>)}
+          <div style={css("margin-top:10px;display:flex;flex-wrap:wrap;gap:6px")}>
+            {Object.values(EDUCATION.coursework).flat().map((course) => <Tag key={course.code} size="sm">{course.code}</Tag>)}
           </div>
         )}
       </div>
@@ -109,19 +109,17 @@ export const { registry } = defineRegistry(catalog, {
       const projects = props.names
         .map((name) => PROJECTS.find((project) => project.name === name))
         .filter((project) => project !== undefined);
-      const columns = "minmax(120px,1.2fr) minmax(0,3fr) 100px";
 
-      // Each Projects element may carry one project or several (the model streams some
-      // answers one element at a time), so the row list never assumes a shared table
-      // header — only a consistent per-row rule, matching the ruled rows on /projects.
       return (
-        <div>
+        <div style={css(`width:100%;${CARD};padding:0`)}>
           {projects.map((project, index) => (
-            <DataRow key={project.name} columns={columns} delay={index * 70}>
-              <RowLink href={project.url}>{project.name}</RowLink>
-              <span className="p light" data-label="Notes">{project.what}</span>
-              <StatusPill status={project.status} pulse={project.status === "Active"} />
-            </DataRow>
+            <div key={project.name} data-bixxie="project-row" style={css(`padding:12px 14px;${index === 0 ? "" : RULE}`)}>
+              <div style={css("display:flex;align-items:center;justify-content:space-between;gap:12px")}>
+                <TextLink href={project.url}>{project.name}</TextLink>
+                <StatusPill status={project.status} pulse={project.status === "Active"} />
+              </div>
+              <p className="p-sm light" style={css("margin:6px 0 0;color:var(--muted-foreground)")}>{project.what}</p>
+            </div>
           ))}
         </div>
       );
@@ -132,94 +130,130 @@ export const { registry } = defineRegistry(catalog, {
         .filter((item) => item !== undefined);
 
       return (
-        <div style={css("display:flex;flex-wrap:wrap;gap:8px")}>
+        <div style={css("width:100%;display:flex;flex-wrap:wrap;gap:6px")}>
           {items.map((item) => <Tag key={item.name} size="sm">{item.name}</Tag>)}
         </div>
       );
     },
     CaseStudy: ({ props }) => {
+      const context = useContext(BixxieActionContext);
       const study = CASES.find(([, , , , url]) => url === `${PATH.cases}/${props.slug}`);
       if (!study) return null;
       const [title, , , canonicalSummary, href] = study;
       const summary = props.summary ?? canonicalSummary;
 
       return (
-        <div style={css("padding-top:4px")}>
-          <TextLink href={href}>{title}</TextLink>
-          {summary && <p className="p light" style={css("margin:8px 0 0;max-width:var(--measure)")}>{summary}</p>}
+        <div style={css(`width:100%;${CARD}`)}>
+          <span className="eyebrow">Case study</span>
+          <div style={css("margin-top:6px")}><TextLink href={href} onClick={() => context?.onNavigate()}>{title}</TextLink></div>
+          {summary && <p className="p-sm light" style={css("margin:6px 0 0;color:var(--muted-foreground)")}>{summary}</p>}
         </div>
       );
     },
     Facts: ({ props }) => (
-      <div style={css("border-top:1px solid var(--border);border-radius:8px;overflow:hidden")}>
+      <div style={css(`width:100%;${CARD};padding:0`)}>
         {props.rows.map((row, index) => (
-          <div
-            key={`${row.label}-${index}`}
-            data-bixxie="fact-row"
-            style={css(`display:grid;grid-template-columns:120px minmax(0,1fr);gap:20px;padding:12px 2px;border-top:${index === 0 ? "0" : "1px solid var(--border)"}`)}
-          >
+          <div key={`${row.label}-${index}`} data-bixxie="fact-row" style={css(`padding:10px 14px;${index === 0 ? "" : RULE}`)}>
             <span className="eyebrow">{row.label}</span>
-            <span className="p light">{row.value}</span>
+            <p className="p-sm light" style={css("margin:4px 0 0")}>{row.value}</p>
           </div>
         ))}
       </div>
     ),
     Comparison: ({ props }) => (
-      <div data-bixxie="comparison" style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)")}>
-        <div className="p" style={css("padding:12px 0;font-weight:var(--weight-semibold)")}>{props.leftTitle}</div>
-        <div data-bixxie="comparison-right-title" className="p" style={css("padding:12px 0 12px 20px;border-left:1px solid var(--border);font-weight:var(--weight-semibold)")}>
-          {props.rightTitle}
+      <div data-bixxie="comparison" style={css(`width:100%;${CARD};padding:0;overflow:hidden`)}>
+        <div style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr))")}>
+          <div className="p-sm" style={css("padding:10px 14px;font-weight:var(--weight-semibold)")}>{props.leftTitle}</div>
+          <div className="p-sm" style={css("padding:10px 14px;font-weight:var(--weight-semibold);border-left:1px solid var(--border)")}>{props.rightTitle}</div>
         </div>
         {props.rows.map((row, index) => (
-          <div
-            key={`${row.label}-${index}`}
-            data-bixxie="comparison-row"
-            style={css("grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;row-gap:8px;padding:4px 0 12px")}
-          >
-            <span className="eyebrow" style={css("grid-column:1/-1")}>{row.label}</span>
-            <span className="p-sm light">{row.left}</span>
-            <span data-bixxie="comparison-value-right" className="p-sm light" style={css("padding-left:20px;border-left:1px solid var(--border)")}>
-              {row.right}
-            </span>
+          <div key={`${row.label}-${index}`} data-bixxie="comparison-row" style={css(RULE)}>
+            <span className="eyebrow" style={css("display:block;padding:8px 14px 0")}>{row.label}</span>
+            <div style={css("display:grid;grid-template-columns:repeat(2,minmax(0,1fr))")}>
+              <span className="p-sm light" style={css("padding:4px 14px 10px")}>{row.left}</span>
+              <span className="p-sm light" style={css("padding:4px 14px 10px;border-left:1px solid var(--border)")}>{row.right}</span>
+            </div>
           </div>
         ))}
       </div>
     ),
-    Notice: ({ props }) => (
-      <aside style={css("padding:12px 14px;border-radius:8px;background:var(--muted);box-shadow:none")}>
-        <div className="p" style={css("font-weight:var(--weight-medium)")}>{props.title}</div>
-        <p className="p-sm light" style={css("margin:4px 0 0")}>{props.body}</p>
-      </aside>
-    ),
+    Notice: ({ props }) => {
+      const NOTICE_LABEL: Record<typeof props.kind, string> = { security: "Security", unknown: "Not on this site", note: "Note" };
+      const NOTICE_ICON: Record<typeof props.kind, string> = { security: "LucideShieldAlert", unknown: "LucideInfo", note: "LucideInfo" };
+
+      return (
+        <aside role="note" style={css("width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;background:var(--muted);display:flex;gap:10px;align-items:flex-start")}>
+          <span style={css("flex:none;margin-top:2px;color:var(--muted-foreground);display:inline-flex")}><Icon name={NOTICE_ICON[props.kind]} size={14} /></span>
+          <div style={css("min-width:0")}>
+            <span className="eyebrow">{NOTICE_LABEL[props.kind]}</span>
+            <div className="p-sm" style={css("margin-top:4px;font-weight:var(--weight-medium)")}>{props.title}</div>
+            <p className="p-sm light" style={css("margin:2px 0 0;color:var(--muted-foreground)")}>{props.body}</p>
+          </div>
+        </aside>
+      );
+    },
     Links: ({ props }) => {
+      const context = useContext(BixxieActionContext);
       const destinations = props.items
         .map((key) => LINK_DESTINATIONS.find((item) => item.key === key))
         .filter((item) => item !== undefined);
 
       return (
-        <nav aria-label="Related links" style={css("display:flex;flex-wrap:wrap;gap:16px")}>
-          {destinations.map((item) => <TextLink key={item.key} href={item.href}>{item.label}</TextLink>)}
+        <nav aria-label="Related links" style={css("display:flex;flex-wrap:wrap;gap:6px 16px;padding:2px 2px 0")}>
+          {destinations.map((item) => (
+            <TextLink key={item.key} href={item.href} onClick={() => context?.onNavigate()}>{item.label}</TextLink>
+          ))}
         </nav>
+      );
+    },
+    Diagram: ({ props }) => {
+      const id = useId().replace(/[^a-zA-Z0-9]/g, "");
+      const containerRef = useRef<HTMLDivElement>(null);
+      const [failed, setFailed] = useState(false);
+
+      useEffect(() => {
+        let cancelled = false;
+        setFailed(false);
+
+        mermaid
+          .parse(props.definition)
+          .then(() => mermaid.render(`bixxie-diagram-${id}`, props.definition))
+          .then(({ svg }) => {
+            if (!cancelled && containerRef.current) containerRef.current.innerHTML = svg;
+          })
+          .catch(() => {
+            // Malformed or disallowed definition (e.g. a directive strict
+            // mode rejects) — fail silently rather than showing broken
+            // markup or a raw Mermaid parser error to the visitor.
+            if (!cancelled) setFailed(true);
+          });
+
+        return () => {
+          cancelled = true;
+        };
+      }, [props.definition, id]);
+
+      if (failed) return null;
+
+      return (
+        <div style={css(`width:100%;${CARD}`)}>
+          {props.title && <span className="eyebrow">{props.title}</span>}
+          <div
+            ref={containerRef}
+            style={css(`margin-top:${props.title ? "10px" : "0"};overflow-x:auto;max-width:100%`)}
+          />
+        </div>
       );
     },
     FollowUps: ({ props }) => {
       const context = useContext(BixxieActionContext);
 
       return (
-        <div data-bixxie="follow-ups" style={css("display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px")}>
+        <div data-bixxie="follow-ups" role="group" aria-label="Suggested questions" style={css("width:100%;display:flex;flex-wrap:wrap;gap:6px;padding-top:2px")}>
           {props.items.map((question, index) => (
-            <button
-              key={`${question}-${index}`}
-              type="button"
-              onClick={() => context?.onAsk(question)}
-              onMouseEnter={(event) => { event.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--foreground) 5%, var(--card))"; }}
-              onMouseLeave={(event) => { event.currentTarget.style.backgroundColor = "var(--card)"; }}
-              onFocus={(event) => { event.currentTarget.style.backgroundColor = "color-mix(in srgb, var(--foreground) 5%, var(--card))"; }}
-              onBlur={(event) => { event.currentTarget.style.backgroundColor = "var(--card)"; }}
-              style={css("width:100%;height:48px;padding:0 10px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--foreground);font-size:14px;line-height:21px;font-weight:300;text-align:left;cursor:pointer;transition:background var(--dur) var(--ease)")}
-            >
+            <Bubble key={`${question}-${index}`} variant="suggestion" onClick={() => context?.onAsk(question)}>
               {question}
-            </button>
+            </Bubble>
           ))}
         </div>
       );

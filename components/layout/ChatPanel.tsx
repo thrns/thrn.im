@@ -1,19 +1,20 @@
 'use client';
 import React, { useLayoutEffect, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { css } from '@/lib/css';
-import { Button, Icon, Kbd, Message } from '@/components/ui';
+import { Bubble, Button, Icon, IconButton, Kbd, Message } from '@/components/ui';
+import BixxieMark from '@/components/bixxie/BixxieMark';
+import Marker from '@/components/bixxie/Marker';
 import BixxieRenderer from '@/components/bixxie/BixxieRenderer';
 import { useBixxieChat } from '@/hooks/useBixxieChat';
-import { SUGS, SUG_ICON } from '@/lib/chrome';
+import { MORE_QUESTIONS, SUGS, SUG_ICON } from '@/lib/chrome';
 import { GREETING } from '@/lib/data';
 import { useChrome } from './ChromeContext';
 
-/** Full-screen "Ask AI" chat (Bixxie). */
+/** "Ask Bixxie" chat: a right-hand side panel over a scrim (full width on small screens). */
 export default function ChatPanel() {
   const { s, setState, closeChat } = useChrome();
   const { messages, draft, setDraft, busy, send, retry, abort } = useBixxieChat();
-  const [hideQuickQuestions, setHideQuickQuestions] = useState(false);
+  const [showMoreQuestions, setShowMoreQuestions] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -21,6 +22,17 @@ export default function ChatPanel() {
   const wasOpenRef = useRef(false);
   const pendingFocusRef = useRef<'open' | 'close' | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!s.chat || !s.queuedQuestion || busy) return;
+    const question = s.queuedQuestion;
+    setState({ queuedQuestion: null });
+    void send(question);
+  }, [s.chat, s.queuedQuestion, busy, send, setState]);
+
+  useEffect(() => {
+    if (!s.chat) setShowMoreQuestions(false);
+  }, [s.chat]);
 
   const finishFocusTransition = () => {
     const action = pendingFocusRef.current;
@@ -66,8 +78,17 @@ export default function ChatPanel() {
     if (scroll) scroll.scrollTop = scroll.scrollHeight;
   }, [messages]);
 
+  const started = messages.length > 0;
+  const aside = 'position:fixed;top:0;right:0;bottom:0;z-index:40;width:min(440px,100vw);max-width:100vw;height:100dvh;box-sizing:border-box;overflow-x:hidden;display:flex;flex-direction:column;background:var(--popover);box-shadow:inset 1px 0 0 var(--border),var(--shadow-xl)';
+
   return (
     <>
+      {/* ---------- scrim ---------- */}
+      <div
+        aria-hidden="true"
+        onClick={closeChat}
+        style={css(`position:fixed;inset:0;z-index:39;background:rgba(10,10,10,.25);transition:opacity var(--dur-slow) var(--ease), visibility var(--dur-slow);opacity:${s.chat ? 1 : 0};visibility:${s.chat ? 'visible' : 'hidden'}`)}
+      />
       {/* ---------- chat ---------- */}
       <aside
         ref={panelRef}
@@ -75,30 +96,28 @@ export default function ChatPanel() {
         aria-modal="true"
         aria-label="Bixxie"
         aria-hidden={!s.chat}
+        data-r="chat-panel"
         onTransitionEnd={(event) => {
           if (event.target === event.currentTarget && event.propertyName === 'transform') finishFocusTransition();
         }}
-        style={css(`position:fixed;inset:0;z-index:40;width:100%;max-width:100vw;height:100dvh;box-sizing:border-box;overflow-x:hidden;display:flex;flex-direction:column;background:var(--background);transition:transform var(--dur-slow) var(--ease), visibility var(--dur-slow);transform:${s.chat ? 'none' : 'translateY(100%)'};visibility:${s.chat ? 'visible' : 'hidden'}`)}
+        style={css(`${aside};transition:transform var(--dur-slow) var(--ease), visibility var(--dur-slow);transform:${s.chat ? 'none' : 'translateX(105%)'};visibility:${s.chat ? 'visible' : 'hidden'}`)}
       >
-        <div style={css('width:100%;max-width:var(--content-width);margin:0 auto;padding:12px var(--page-gutter);box-sizing:border-box;display:flex;align-items:center;gap:12px')}>
-          <div style={css('flex:1;padding:10px 0 10px 10px;display:flex;align-items:center')}>
-            <Link className="bixxie" href="/" aria-label="Bixxie, home" onClick={closeChat} style={css('display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:6px;background:var(--muted);color:var(--foreground);text-decoration:none;cursor:pointer;transition:background var(--dur) var(--ease)')}>
-              <span style={css('width:9px;height:9px;flex:none;transform:rotate(45deg);background:var(--clay)')}></span>
-              <span style={css('font-size:14px;line-height:20px;font-weight:500;letter-spacing:-.011em')}>Bixxie</span>
-            </Link>
+        <div style={css('flex:none;display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--border)')}>
+          <BixxieMark size={32} />
+          <div style={css('flex:1;min-width:0')}>
+            <div style={css('font-size:14px;line-height:20px;font-weight:500;letter-spacing:-.011em')}>Ask Bixxie</div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setState({ info: true })}><span style={css('display:inline-flex;align-items:center;gap:6px')}><Icon name="LucideInfo" size={14} />Info</span></Button>
-          <Button variant="outline" size="sm" onClick={closeChat}><span style={css('display:inline-flex;align-items:center;gap:6px')}>Close<span data-r="kbd" style={css('display:inline-flex')}><Kbd>Esc</Kbd></span></span></Button>
+          <Button variant="outline" size="sm" onClick={closeChat} aria-label="Close chat"><span style={css('display:inline-flex;align-items:center;gap:6px')}>Close<span data-r="kbd" style={css('display:inline-flex')}><Kbd>Esc</Kbd></span></span></Button>
         </div>
         <div data-r="chat-scroll" style={css('flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch')}>
-          <div
-            data-r="chatp"
-            aria-busy={busy}
-            style={css('width:100%;max-width:640px;margin:0 auto;padding:24px var(--page-gutter);box-sizing:border-box;display:flex;flex-direction:column;gap:20px;min-height:100%;justify-content:flex-end')}
-          >
-            <p className="p-lg light" style={css('margin:0;min-height:56px')}>{GREETING}</p>
+          <div data-r="chatp" aria-busy={busy} style={css('width:100%;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;min-height:100%;justify-content:flex-end')}>
+            <Marker>Today</Marker>
+            <div style={css('display:flex;align-items:flex-start;gap:8px')}>
+              <div style={css('padding-top:8px')}><BixxieMark /></div>
+              <Bubble variant="secondary">{GREETING}</Bubble>
+            </div>
             {messages.map((message) => (
-              <div key={message.id} data-anim="1" style={css('animation:fadeUp .45s var(--ease) both')}>
+              <div key={message.id} data-anim="1" style={css('animation:fadeUp .3s var(--ease) both')}>
                 {message.role === 'user' ? (
                   <Message align="right">{message.text}</Message>
                 ) : (
@@ -107,15 +126,19 @@ export default function ChatPanel() {
                       <BixxieRenderer
                         spec={message.spec}
                         onAsk={(question) => { void send(question); }}
+                        onNavigate={closeChat}
                         loading={message.status === 'streaming' && !message.spec}
                       />
                     ) : null}
                     {message.status === 'error' && message.error && (
-                      <div style={css(`display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:${message.spec ? '12px' : '0'}`)}>
-                        <div role="alert" style={css('width:100%;box-sizing:border-box;padding:12px 14px;border-radius:0;background:var(--muted);color:var(--muted-foreground);font-size:14px;line-height:21px;font-weight:300')}>
-                          {message.error}
+                      <div style={css(`display:flex;align-items:flex-start;gap:8px;margin-top:${message.spec ? '8px' : '0'}`)}>
+                        <div style={css('padding-top:8px;opacity:' + (message.spec ? '0' : '1'))}><BixxieMark /></div>
+                        <div style={css('display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0')}>
+                          <div role="alert" style={css('box-sizing:border-box;padding:10px 14px;border-radius:14px;background:color-mix(in srgb, var(--destructive) 10%, transparent);color:var(--destructive);font-size:14px;line-height:20px')}>
+                            {message.error}
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => { void retry(message.id); }}>Try again</Button>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => { void retry(message.id); }}>Retry</Button>
                       </div>
                     )}
                   </div>
@@ -125,34 +148,39 @@ export default function ChatPanel() {
             <div ref={endRef}></div>
           </div>
         </div>
-        <div data-r="chat-footer" style={css('flex:none;width:100%;max-width:720px;margin:0 auto;padding:8px var(--page-gutter) 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px')}>
-          <button className="toggle-q" onClick={() => setHideQuickQuestions((hidden) => !hidden)} style={css('align-self:center;display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--muted-foreground);font:inherit;font-size:13px;line-height:20px;font-weight:300;cursor:pointer;padding:4px 8px')}>
-            <Icon name={hideQuickQuestions ? 'LucideChevronUp' : 'LucideChevronDown'} size={14} />{hideQuickQuestions ? 'Show quick questions' : 'Hide quick questions'}
-          </button>
-          {!hideQuickQuestions && (
-            <div data-r="sugs" style={css('display:flex;flex-wrap:nowrap;justify-content:center;gap:8px')}>
-              {SUGS.map((x, i) => {
-                const more = x === 'More';
-                const delay = s.chat ? 380 + i * 60 + 'ms' : '0ms';
-                return (
-                  <button key={x} type="button" onClick={() => { void send(x); }} aria-label={x} disabled={busy}
-                    style={css(`display:inline-flex;align-items:center;justify-content:center;gap:${more ? '0' : '8px'};flex:${more ? '0 0 48px' : '1 1 0'};min-width:0;height:48px;padding:0 ${more ? '0' : '10px'};border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--foreground);font:inherit;font-size:14px;line-height:21px;font-weight:300;letter-spacing:-0.011em;cursor:${busy ? 'default' : 'pointer'};opacity:${s.chat ? 1 : 0};transform:${s.chat ? 'none' : 'translateY(10px)'};transition:background var(--dur) var(--ease),opacity .5s var(--ease) ${delay},transform .5s var(--ease) ${delay}`)}>
-                    <span style={css('display:inline-flex;color:var(--muted-foreground)')}><Icon name={SUG_ICON[x]} size={16} /></span>{more ? '' : x}
-                  </button>
-                );
-              })}
+        <div data-r="chat-footer" style={css('flex:none;padding:8px 16px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px')}>
+          {showMoreQuestions && (
+            <div id="bixxie-more" role="group" aria-label="More questions" style={css('display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-height:176px;overflow-y:auto')}>
+              {MORE_QUESTIONS.map((question) => (
+                <Bubble key={question} variant="suggestion" disabled={busy} onClick={() => { setShowMoreQuestions(false); void send(question); }}>
+                  {question}
+                </Bubble>
+              ))}
             </div>
           )}
-          <form onSubmit={(event) => { event.preventDefault(); void send(draft); }} style={css('display:flex;align-items:center;gap:8px;width:100%;height:56px;box-sizing:border-box;padding:0 8px 0 24px;border:1px solid var(--border);border-radius:9999px;background:color-mix(in srgb, var(--foreground) 4%, var(--card))')}>
-            <input ref={inputRef} value={draft} maxLength={2000} onChange={(e) => setDraft(e.target.value)} placeholder="Ask about my work…"
-              style={css('flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--foreground);font-family:var(--font-sans);font-size:15px;font-weight:300;letter-spacing:-0.011em')} />
-            <button className="send-btn" type="submit" aria-label="Send" disabled={!draft.trim() || busy} style={css(`flex:none;width:40px;height:40px;border:0;border-radius:9999px;background:var(--foreground);color:var(--background);display:inline-flex;align-items:center;justify-content:center;cursor:${!draft.trim() || busy ? 'default' : 'pointer'}`)}>
-              <Icon name="LucideArrowUp" size={18} />
-            </button>
+          <div data-r="sugs" role="group" aria-label="Quick questions" style={css(`display:flex;gap:6px;${started ? 'flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none' : 'flex-wrap:wrap'}`)}>
+            {SUGS.map((x) => {
+              const more = x === 'More';
+              return (
+                <Bubble key={x} variant="suggestion" disabled={!more && busy} aria-label={x}
+                  {...(more ? { 'aria-expanded': showMoreQuestions, 'aria-controls': 'bixxie-more' } : {})}
+                  onClick={() => { if (more) setShowMoreQuestions((open) => !open); else { setShowMoreQuestions(false); void send(x); } }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 'none', whiteSpace: 'nowrap', padding: '6px 12px' }}>
+                  <span style={css('display:inline-flex;color:var(--muted-foreground)')}><Icon name={SUG_ICON[x]} size={14} /></span>{more ? '' : x}
+                </Bubble>
+              );
+            })}
+          </div>
+          <form onSubmit={(event) => { event.preventDefault(); void send(draft); }} style={css('display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:6px 6px 6px 16px;border:1px solid var(--border);border-radius:14px;background:var(--background)')}>
+            <input ref={inputRef} value={draft} maxLength={2000} onChange={(e) => setDraft(e.target.value)} placeholder="Ask about my work…" aria-label="Message Bixxie"
+              style={css('flex:1;min-width:0;height:36px;border:0;outline:0;background:transparent;color:var(--foreground);font-family:var(--font-sans);font-size:14px;font-weight:400;letter-spacing:-0.011em')} />
+            <IconButton className="send-btn" type="submit" aria-label="Send" variant="primary" size="sm" disabled={!draft.trim() || busy} style={{ borderRadius: 9999 }}>
+              <Icon name="LucideArrowUp" size={16} />
+            </IconButton>
           </form>
+          <span className="p-mini muted" style={css('text-align:center')}>Enter to send. I only know what is on this site.</span>
         </div>
       </aside>
-
     </>
   );
 }

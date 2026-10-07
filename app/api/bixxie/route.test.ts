@@ -93,7 +93,7 @@ describe("Bixxie POST route validation and origin checks", () => {
     });
   });
 
-  test("accepts a valid same-origin payload and returns generated JSONL", async () => {
+  test("accepts a valid same-origin payload and returns the generated structured-output JSON", async () => {
     await withEnvironment({ NODE_ENV: "production", BIXXIE_ALLOWED_ORIGINS: "https://portfolio.test" }, async () => {
       let called = false;
       const response = await handleBixxieRequest(jsonRequest(
@@ -101,13 +101,13 @@ describe("Bixxie POST route validation and origin checks", () => {
         { Origin: "https://portfolio.test", "Sec-Fetch-Site": "same-origin" },
       ), async () => {
         called = true;
-        return iteratorFrom(getBixxieFallback("unknown") + "\n");
+        return iteratorFrom(getBixxieFallback("unknown"));
       });
 
       const body = await response.text();
       expect(response.status).toBe(200);
       expect(called).toBe(true);
-      expect(body).toContain('"op":"add"');
+      expect(body).toContain('"root":"answer"');
       expect(response.headers.get("Cache-Control")).toBe("no-store, private");
     });
   });
@@ -128,6 +128,6 @@ describe("Bixxie POST route validation and origin checks", () => {
     const body = await response.text();
     expect(response.status).toBe(503);
     expect(body.includes(upstreamText)).toBe(false);
-    expect(body).toContain("Bixxie is temporarily unavailable");
+    expect(body).toContain("Temporarily unavailable");
   });
 });

@@ -5,7 +5,7 @@ import { useCustomCursor } from '@/hooks/useCustomCursor';
 import { ChromeProvider } from './ChromeContext';
 import Header from './Header';
 import ChatPanel from './ChatPanel';
-import { EmailDialog, GuideDialog, InfoDialog } from './Dialogs';
+import { EmailDialog, GuideDialog } from './Dialogs';
 
 function Frame({ children }: { children: ReactNode }) {
   useCustomCursor();
@@ -14,7 +14,6 @@ function Frame({ children }: { children: ReactNode }) {
       <Header />
       {children}
       <ChatPanel />
-      <InfoDialog />
       <EmailDialog />
       <GuideDialog />
     </div>

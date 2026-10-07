@@ -5,18 +5,18 @@ import { DEFAULT_MO, EMAIL, NAV, PATH, SHAPES, activeOf } from '@/lib/chrome';
 
 export type ChromeState = {
   email: boolean; copied: boolean; moreOpen: boolean; guide: boolean; info: boolean; chat: boolean; dark: boolean;
-  curOpen: boolean; curOn: boolean; curShape: string; mo: Record<string, boolean>; menu: boolean;
+  curOpen: boolean; curOn: boolean; curShape: string; mo: Record<string, boolean>; menu: boolean; queuedQuestion: string | null;
 };
 const INIT: ChromeState = {
   email: false, copied: false, moreOpen: false, guide: false, info: false, chat: false, dark: false, curOpen: false, curOn: true,
-  curShape: 'circle', mo: { ...DEFAULT_MO }, menu: false,
+  curShape: 'circle', mo: { ...DEFAULT_MO }, menu: false, queuedQuestion: null,
 };
 
 type Setter = (p: Partial<ChromeState> | ((s: ChromeState) => Partial<ChromeState>)) => void;
 export type Chrome = {
   s: ChromeState; sRef: React.MutableRefObject<ChromeState>; setState: Setter;
   setDark: (d: boolean) => void; copyAddr: () => void; saveCur: (p: Partial<ChromeState>) => void;
-  openChat: (e?: React.SyntheticEvent) => void; closeChat: () => void; openEmail: (e?: React.SyntheticEvent) => void;
+  openChat: (e?: React.SyntheticEvent) => void; askQuestion: (question: string) => void; closeChat: () => void; openEmail: (e?: React.SyntheticEvent) => void;
   closeEmail: () => void; closeInfo: () => void; closeGuide: () => void;
   active: string;
   navItems: { hint: string; label: string; href: string; active: boolean }[];
@@ -140,11 +140,12 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
   const navItems = NAV.map(([hint, label, id]) => ({ hint, label, href: PATH[id], active: active === id }));
   const openEmail = (e?: React.SyntheticEvent) => { e && e.preventDefault && e.preventDefault(); setState({ email: true, copied: false }); };
   const openChat = (e?: React.SyntheticEvent) => { e && e.preventDefault && e.preventDefault(); setState({ chat: true }); };
+  const askQuestion = (question: string) => setState({ chat: true, moreOpen: false, queuedQuestion: question });
   const closeChat = () => setState({ chat: false, info: false });
   const closeEmail = () => setState({ email: false });
   const closeInfo = () => setState({ info: false });
   const closeGuide = () => setState({ guide: false });
 
-  const value: Chrome = { s, sRef, setState, setDark, copyAddr, saveCur, openChat, closeChat, openEmail, closeEmail, closeInfo, closeGuide, active, navItems };
+  const value: Chrome = { s, sRef, setState, setDark, copyAddr, saveCur, openChat, askQuestion, closeChat, openEmail, closeEmail, closeInfo, closeGuide, active, navItems };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { css } from '@/lib/css';
 import { CASES } from '@/lib/data';
 import PageMain from '@/components/layout/PageMain';
@@ -16,7 +17,9 @@ export default function CaseStudiesPage() {
             <DataRow key={name} columns={COLS} delay={240 + i * 70}>
               <span className="p light" style={css('color:var(--muted-foreground)')}>{String(i + 1).padStart(2, '0')}</span>
               <span style={css('display:flex;flex-direction:column;align-items:flex-start;gap:4px')}>
-                <a href={url} target={/^https?:/.test(url) ? '_blank' : '_self'} rel="noopener" style={css('font-size:14px;white-space:nowrap;line-height:21px;font-weight:300;letter-spacing:-0.011em;text-decoration:underline;text-decoration-color:var(--foreground);text-decoration-thickness:1.5px;text-underline-offset:5px;overflow-wrap:anywhere')}>{name}</a>
+                {url.startsWith('/')
+                  ? <Link href={url} style={css('font-size:14px;white-space:nowrap;line-height:21px;font-weight:300;letter-spacing:-0.011em;text-decoration:underline;text-decoration-color:var(--foreground);text-decoration-thickness:1.5px;text-underline-offset:5px;overflow-wrap:anywhere')}>{name}</Link>
+                  : <a href={url} target="_blank" rel="noopener" style={css('font-size:14px;white-space:nowrap;line-height:21px;font-weight:300;letter-spacing:-0.011em;text-decoration:underline;text-decoration-color:var(--foreground);text-decoration-thickness:1.5px;text-underline-offset:5px;overflow-wrap:anywhere')}>{name}</a>}
               </span>
               <span className="p light" data-label="Summary">{summary}</span>
             </DataRow>

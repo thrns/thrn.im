@@ -25,7 +25,7 @@ function RoleItem({ r, i, last }: { r: Role; i: number; last: boolean }) {
           <span style={css('text-decoration:underline;text-decoration-color:var(--foreground);text-decoration-thickness:1.5px;text-underline-offset:5px;color:var(--muted-foreground)')}>{r.highlight}</span>
         </p>
         {!!r.summary2 && <p className="p light" style={css('margin:12px 0 0;max-width:var(--measure);color:var(--muted-foreground)')}>{r.summary2}</p>}
-        <div data-stack="1" className="p-sm light" style={css('color:var(--muted-foreground)')}>{r.stack}</div>
+        {!!r.stack && <div data-stack="1" className="p-sm light" style={css('color:var(--muted-foreground)')}>{r.stack}</div>}
       </div>
     </div>
   );

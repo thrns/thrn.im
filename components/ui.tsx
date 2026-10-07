@@ -31,7 +31,7 @@ export function Button({ variant = 'primary', size = 'default', disabled = false
   const [focus, setFocus] = useState(false);
   const s = SZ[size] || SZ.default;
   const V: any = ({
-    primary: { background: 'var(--primary)', color: 'var(--primary-foreground)', opacity: hover ? 0.9 : 1 },
+    primary: { background: hover ? 'color-mix(in srgb, var(--primary) 85%, var(--background))' : 'var(--primary)', color: 'var(--primary-foreground)' },
     secondary: { background: 'var(--secondary)', color: 'var(--secondary-foreground)', opacity: hover ? 0.8 : 1 },
     outline: {
       background: hover ? 'transparent' : 'color-mix(in srgb, var(--background) 30%, transparent)',
@@ -52,6 +52,7 @@ export function Button({ variant = 'primary', size = 'default', disabled = false
   return (
     <button
       {...rest}
+      data-primary={variant === 'primary' ? '' : undefined}
       disabled={disabled}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -79,7 +80,7 @@ export function IconButton({ variant = 'ghost', size = 'default', disabled = fal
   const [focus, setFocus] = useState(false);
   const s = ISZ[size] || ISZ.default;
   const V: any = ({
-    primary: { background: 'var(--primary)', color: 'var(--primary-foreground)', opacity: hover ? 0.9 : 1 },
+    primary: { background: hover ? 'color-mix(in srgb, var(--primary) 85%, var(--background))' : 'var(--primary)', color: 'var(--primary-foreground)' },
     secondary: { background: 'var(--secondary)', color: 'var(--secondary-foreground)', opacity: hover ? 0.8 : 1 },
     outline: { background: 'transparent', color: 'var(--foreground)', boxShadow: 'inset 0 0 0 1px var(--border)' + (hover ? ', var(--shadow-xs)' : '') },
     ghost: { background: hover ? 'var(--hover-ghost)' : 'transparent', color: 'var(--foreground)' },
@@ -161,7 +162,23 @@ export function Switch({ checked = false, onChange, disabled = false, label, sty
 const BV: Record<string, React.CSSProperties> = {
   primary: { background: 'var(--bubble-primary)', color: 'var(--bubble-primary-fg)' },
   secondary: { background: 'var(--bubble-secondary)', color: 'var(--bubble-secondary-fg)' },
+  suggestion: { background: 'var(--background)', color: 'var(--foreground)', outline: '1px dashed var(--border)', outlineOffset: -1 },
 };
+
+/** Chat bubble. `suggestion` is the dashed-outline tappable chip; pass `onClick` to render it as a button. */
+export function Bubble({ variant = 'secondary', onClick, disabled, children, style, ...rest }: {
+  variant?: 'primary' | 'secondary' | 'suggestion'; onClick?: () => void; disabled?: boolean; children?: React.ReactNode; style?: React.CSSProperties;
+} & Omit<React.HTMLAttributes<HTMLElement>, 'onClick' | 'style'>) {
+  const base: React.CSSProperties = {
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: 14,
+    border: 0, fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px', fontWeight: 400, textAlign: 'left', overflowWrap: 'anywhere',
+    ...BV[variant], ...style,
+  };
+  if (onClick) {
+    return <button type="button" className="bx-chip" onClick={onClick} disabled={disabled} {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)} style={{ ...base, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? .5 : 1 }}>{children}</button>;
+  }
+  return <div {...rest} style={base}>{children}</div>;
+}
 
 export function Message({ align = 'left', children }: { align?: 'left' | 'right'; children?: React.ReactNode }) {
   const right = align === 'right';

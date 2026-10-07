@@ -9,7 +9,7 @@ describe("Bixxie generated spec validation", () => {
       elements: {
         answer: {
           type: "Answer",
-          props: { label: null, title: "Portfolio", intro: null },
+          props: { text: "Portfolio" },
           children: ["text"],
         },
         text: {
@@ -29,7 +29,7 @@ describe("Bixxie generated spec validation", () => {
       elements: {
         answer: {
           type: "Answer",
-          props: { label: null, title: "Portfolio", intro: null },
+          props: { text: "Portfolio" },
           children: ["made-up"],
         },
         "made-up": { type: "Paragraph", props: {}, children: [] },
@@ -46,7 +46,7 @@ describe("Bixxie generated spec validation", () => {
       elements: {
         answer: {
           type: "Answer",
-          props: { label: null, title: "Portfolio", intro: null },
+          props: { text: "Portfolio" },
           children: ["projects"],
         },
       },
@@ -62,7 +62,7 @@ describe("Bixxie generated spec validation", () => {
       elements: {
         answer: {
           type: "Answer",
-          props: { label: null, title: "Portfolio", intro: null },
+          props: { text: "Portfolio" },
           children: ["text"],
         },
         text: {
@@ -84,7 +84,7 @@ describe("Bixxie generated spec validation", () => {
       elements: {
         answer: {
           type: "Answer",
-          props: { label: null, title: "Portfolio", intro: null },
+          props: { text: "Portfolio" },
           children: ["metrics"],
         },
         metrics: {
@@ -102,33 +102,29 @@ describe("Bixxie generated spec validation", () => {
 });
 
 describe("summarizeBixxieSpec", () => {
-  test("joins the root Answer's title and intro", () => {
+  test("returns the root Answer's text", () => {
     const summary = summarizeBixxieSpec({
       root: "answer",
       elements: {
         answer: {
           type: "Answer",
-          props: { label: null, title: "Technical Stack", intro: "My current coding tools." },
+          props: { text: "I mostly work in Python and TypeScript." },
           children: [],
         },
       },
     });
 
-    expect(summary).toBe("Technical Stack — My current coding tools.");
+    expect(summary).toBe("I mostly work in Python and TypeScript.");
   });
 
-  test("falls back to just the title when intro is null", () => {
+  test("trims surrounding whitespace", () => {
     const summary = summarizeBixxieSpec({
       root: "answer",
       elements: {
-        answer: {
-          type: "Answer",
-          props: { label: null, title: "Fun Fact", intro: null },
-          children: [],
-        },
+        answer: { type: "Answer", props: { text: "  Short.  " }, children: [] },
       },
     });
 
-    expect(summary).toBe("Fun Fact");
+    expect(summary).toBe("Short.");
   });
 });
