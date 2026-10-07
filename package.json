@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "eval:bixxie": "bun scripts/bixxie-eval.ts"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",

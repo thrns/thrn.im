@@ -128,3 +128,46 @@ describe("summarizeBixxieSpec", () => {
     expect(summary).toBe("Short.");
   });
 });
+
+describe("negative evidence rows are dropped", () => {
+  const spec = (rows: Array<{ label: string; value: string }>) => ({
+    root: "a",
+    elements: {
+      a: { type: "Answer", props: { text: "Yes." }, children: ["s"] },
+      s: { type: "Section", props: { label: "Evidence", title: null }, children: ["f"] },
+      f: { type: "Facts", props: { rows }, children: [] },
+    },
+  });
+
+  test("keeps real rows, drops 'not documented' ones", () => {
+    const result = inspectBixxieSpec(spec([
+      { label: "Hyr", value: "Cut screening from 8 minutes to under 2." },
+      { label: "Usage", value: "Exact usage numbers are not documented." },
+    ])).spec as unknown as { elements: Record<string, { props: { rows?: unknown[] } }> };
+    expect(result.elements.f.props.rows).toHaveLength(1);
+  });
+
+  test("removes the Facts and its Section when only negatives are left", () => {
+    const result = inspectBixxieSpec(spec([{ label: "Rockets", value: "No experience with rockets is present in his portfolio." }])).spec as unknown as { elements: Record<string, unknown> };
+    expect(result.elements.f).toBeUndefined();
+    expect(result.elements.s).toBeUndefined();
+    expect(result.elements.a).toBeDefined();
+  });
+});
+
+describe("plain words", () => {
+  test("swaps banned jargon for the plain word and keeps capitalisation", async () => {
+    const { plainWords } = await import("@/lib/bixxie/spec");
+    expect(plainWords("He builds robust systems with telemetry.")).toBe("He builds solid systems with tracking.");
+    expect(plainWords("Robust and production-grade.")).toBe("Solid and production.");
+    expect(plainWords("He leveraged an evaluation harness.")).toBe("He used a test setup.");
+  });
+
+  test("is applied to a reply on its way to the renderer", () => {
+    const result = inspectBixxieSpec({
+      root: "a",
+      elements: { a: { type: "Answer", props: { text: "He builds robust AI systems." }, children: [] } },
+    }).spec as unknown as { elements: Record<string, { props: { text: string } }> };
+    expect(result.elements.a.props.text).toBe("He builds solid AI systems.");
+  });
+});

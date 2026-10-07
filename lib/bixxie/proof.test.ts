@@ -47,12 +47,12 @@ describe("classifyProofTier", () => {
 });
 
 describe("proof candidates", () => {
-  test("come only from evidence sources and carry a label", () => {
+  test("come only from evidence sources; non-knowledge ones carry a label", () => {
     const context = retrievePortfolioContext("Berribot ranking");
     const candidates = extractProofCandidates(context);
     expect(candidates.length).toBeGreaterThan(0);
     for (const candidate of candidates) {
-      expect(candidate.label.length).toBeGreaterThan(0);
+      if (!candidate.source.startsWith("knowledge:")) expect(candidate.label.length).toBeGreaterThan(0);
       expect(context).toContain(candidate.line.slice(0, 40));
     }
   });
@@ -158,5 +158,35 @@ describe("section label variety", () => {
     const context = retrievePortfolioContext("can he build ranking systems at Berribot");
     const text = proofDirective(ask("can he build ranking systems at Berribot"), context, () => 0.5) ?? "";
     expect(text).not.toContain('label "Proof"');
+  });
+});
+
+describe("topics he has not worked on", () => {
+  test("a topic miss gives no evidence and forbids invented proof", () => {
+    const text = proofDirective(ask("can he build rockets?"), "[SOURCE: role:Hyr]\nBuilt a thing that cut screening from 8 minutes to under 2.\n[/SOURCE]", () => 0.1, { topicMissed: true }) ?? "";
+    expect(text).toContain("Do not invent proof");
+    expect(text).not.toContain("EVIDENCE CANDIDATES");
+  });
+
+  test("unrelated work is not offered for 'rockets' through the real pipeline", async () => {
+    const { requestDirectives } = await import("@/lib/bixxie/advocacy");
+    const q = "can he build rockets?";
+    const out = requestDirectives(ask(q), retrievePortfolioContext(q)).join("\n");
+    expect(out).toContain("Do not invent proof");
+  });
+
+  test("rows must state achievements, never 'not documented'", () => {
+    const context = retrievePortfolioContext("can he build ranking systems at Berribot");
+    const text = proofDirective(ask("can he build ranking systems at Berribot"), context) ?? "";
+    expect(text).toContain("Never write a row that says something is unknown");
+    expect(text).toContain("never use the words");
+  });
+});
+
+describe("filler words are not topics", () => {
+  test("'shipped something to real users' finds work, it is not a topic miss", async () => {
+    const { evidenceTopicMissed } = await import("@/lib/bixxie/grounding");
+    expect(evidenceTopicMissed("Has he ever shipped something to real users?")).toBe(false);
+    expect(evidenceTopicMissed("Can he build rockets?")).toBe(true);
   });
 });

@@ -1,3 +1,4 @@
+import { evidenceTopicMissed } from "@/lib/bixxie/grounding";
 import { proofDirective } from "@/lib/bixxie/proof";
 import { normalizeUserInput, type ConversationMessage } from "@/lib/bixxie/security";
 
@@ -86,12 +87,16 @@ export function fitDirective(mode: FitMode, random: Random = Math.random): strin
 
 export type PitchIntent = "hire" | "collaborate" | "evaluate";
 
+// Intent is the VISITOR's own purpose, so these need first-person or hiring phrasing.
+// Bare nouns like "role", "job", "startup" or "co-founded" are deliberately absent:
+// they describe TP's history ("what was his role at Berribot", "which startup did he
+// co-found") and must not turn a plain factual question into a sales pitch.
 const HIRE_INTENT =
-  /\b(?:hir(?:e|ing)|recruit(?:ing)?|candidate|job|role|position|opening|vacanc\w*|full[- ]?time|intern(?:ship)?|contract(?:or|ing)?|freelanc\w*|consult(?:ant|ing)?|onboard\w*|resume|cv|interview|looking for (?:a|an|someone)|need (?:a|an|someone))\b/iu;
+  /\b(?:hir(?:e|ing)|recruit(?:ing|er|ment)?|(?:we(?:'re| are)|i(?:'m| am)|looking|searching|need|want|seeking)\b.{0,25}\b(?:a|an|some(?:one|body)|to (?:hire|bring|add))\b.{0,40}\b(?:engineer|developer|dev|hire|contractor|freelancer|consultant|intern|founder|cto|team ?mate|candidate)|(?:our|my) (?:team|company|startup|org(?:ani[sz]ation)?|opening|vacanc\w*|role|position|project)|for (?:this|the|our|that|my) (?:role|position|job|opening)|job (?:opening|posting|description|offer)|vacanc\w*|full[- ]?time (?:role|position|job|hire)|internship (?:role|position|opening)|contract(?:or)? (?:role|work|engagement)|onboard\w*)\b/iu;
 const COLLAB_INTENT =
-  /\b(?:collaborat\w*|partner(?:ship)?|co-?found\w*|work(?:ing)? (?:with|together)|team up|join (?:us|my|our)|build (?:with|together)|side project|startup|project (?:idea|together))\b/iu;
+  /\b(?:collaborat\w*|partner with|team up|work together|build (?:with|together)|(?:build|make|work on|create)\w*\s+(?:something|anything|a project)\s+(?:with|together)|side project|project (?:together|idea)|join (?:us|my|our)|(?:start|build|launch|found)\w*\s+(?:a|an|something)\s+(?:company|startup|product|business)|co-?found\w*\s+(?:with|together|something))\b/iu;
 const EVALUATE_INTENT =
-  /\b(?:fit|good (?:for|at)|right (?:person|choice|candidate)|recommend\w*|strengths?|why (?:should|him|tp|tharun)|worth|team player|detail[- ]oriented|reliable|trust\w*|stand(?:s)? out|what (?:does|can) (?:he|tp|tharun) (?:do|bring|offer)|how (?:good|strong))\b/iu;
+  /\b(?:right (?:person|choice|candidate|fit)|good (?:fit|hire)|(?:a )?fit for|recommend\w*|strengths?|why (?:should|him|tp|tharun)|worth (?:hiring|a call|talking)|team player|detail[- ]oriented|reliable|trust\w*|stand(?:s)? out|what (?:does|can) (?:he|tp|tharun) (?:bring|offer)|how (?:good|strong))\b/iu;
 
 // Topics where a joke would be tone-deaf or beside the point.
 const NO_JOKE_TOPIC =
@@ -180,8 +185,14 @@ const CLOSERS: readonly string[] = [
   "Close by offering to go deeper on whichever part they care about.",
 ];
 
+const NO_EMBELLISHMENT_RULE =
+  "State the quirk exactly as given, in one plain line. Do not add a scene, story, time, place, number or example to it (no \"once he...\", \"that time...\"). If you cannot do that, skip the joke.";
+
+const PLAIN_WORDS_RULE =
+  "Plain words only: never write telemetry, observability, evaluation harness, instrumentation or measurement system; say tested, checked, tracked or watched instead.";
+
 const VARIETY_RULE =
-  "Variety matters: earlier assistant turns in USER_CONVERSATION show what you already said, so do not reuse their jokes, openers, sentence shapes or closers. Do not start with \"Honestly\" or \"Nothing serious\" every time. Word it fresh, as a person would, never from a stock phrase.";
+  NO_EMBELLISHMENT_RULE + " " + PLAIN_WORDS_RULE + " Variety matters: earlier assistant turns in USER_CONVERSATION show what you already said, so do not reuse their jokes, openers, sentence shapes or closers. Never start with \"Honestly\", \"Nothing serious\" or \"Nothing comes to mind\". Word it fresh, as a person would, never from a stock phrase.";
 
 export function pitchDirective(
   messages: ConversationMessage[],
@@ -222,13 +233,17 @@ export function requestDirectives(
   messages: ConversationMessage[],
   portfolioContext = "",
   random: Random = Math.random,
+  options: { topicMissed?: boolean } = {},
 ): string[] {
   const fitMode = classifyFitQuery(messages);
   const directives: string[] = [];
   if (fitMode) directives.push(fitDirective(fitMode, random));
   const pitch = pitchDirective(messages, fitMode, random);
   if (pitch) directives.push(pitch);
-  const proof = fitMode ? null : proofDirective(messages, portfolioContext, random);
+  const latestUser = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+  const proof = fitMode
+    ? null
+    : proofDirective(messages, portfolioContext, random, { topicMissed: options.topicMissed ?? evidenceTopicMissed(normalizeUserInput(latestUser)) });
   if (proof) directives.push(proof);
   return directives;
 }

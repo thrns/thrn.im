@@ -151,3 +151,39 @@ describe("follow-ups are answered on their own terms", () => {
     expect(pitchDirective(ask("we are hiring an AI engineer"), null) ?? "").toContain("FIRST sentence must directly answer");
   });
 });
+
+describe("intent is about the visitor, not TP's history", () => {
+  test.each([
+    "What was his role at Berribot?",
+    "What job did he do at Hyr?",
+    "Tell me about his position on testing",
+    "Which startup did he co-found?",
+    "Which startups did he co-found?",
+    "What's his resume say about projects?",
+    "What candidate matching did he build?",
+    "What did he do as a technical consultant at Hyr?",
+    "What partnerships did Berribot have?",
+  ])("no pitch: %s", (text) => {
+    expect(classifyPitchIntent(ask(text))).toBeNull();
+  });
+
+  test.each([
+    ["we're hiring an engineer", "hire"],
+    ["I need a backend contractor for 3 months", "hire"],
+    ["Looking for a founding engineer for our seed-stage startup", "hire"],
+    ["Recruiting for an applied LLM role", "hire"],
+    ["we have an opening on our team", "hire"],
+    ["Want to collaborate on something?", "collaborate"],
+    ["I'd like to build something with him", "collaborate"],
+    ["Do you want to start a company together", "collaborate"],
+  ])("pitch: %s -> %s", (text, intent) => {
+    expect(classifyPitchIntent(ask(text))).toBe(intent as PitchIntent);
+  });
+});
+
+describe("jokes are not embellished", () => {
+  test("every joke directive forbids adding a scene or story", () => {
+    expect(pitchDirective(ask("we are hiring an AI engineer"), null) ?? "").toContain("Do not add a scene, story");
+    expect(fitDirective("advocate")).toContain("Do not add a scene, story");
+  });
+});

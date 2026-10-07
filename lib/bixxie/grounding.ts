@@ -407,7 +407,7 @@ const EVIDENCE_NOISE = new Set([
   'build', 'built', 'building', 'system', 'systems', 'production', 'experience', 'experienced', 'good', 'great',
   'strong', 'suited', 'suitable', 'fit', 'role', 'roles', 'engineer', 'engineering', 'work', 'worked', 'working',
   'ever', 'any', 'show', 'proof', 'able', 'capable', 'ready', 'right', 'tharun', 'tp', 'he', 'his', 'him',
-  'handle', 'handles', 'handled', 'handling', 'technical', 'approach', 'deal', 'manage', 'lead', 'ship', 'shipped', 'real', 'world', 'team', 'someone', 'looking', 'need', 'hire', 'hiring',
+  'something', 'anything', 'everything', 'thing', 'things', 'stuff', 'ever', 'actually', 'much', 'many', 'handle', 'handles', 'handled', 'handling', 'technical', 'approach', 'deal', 'manage', 'lead', 'ship', 'shipped', 'real', 'world', 'team', 'someone', 'looking', 'need', 'hire', 'hiring',
 ]);
 
 const EVIDENCE_TYPES: ReadonlyArray<GroundingSource['type']> = ['role', 'case-study', 'project', 'publication'];
@@ -420,9 +420,31 @@ const EVIDENCE_TYPES: ReadonlyArray<GroundingSource['type']> = ['role', 'case-st
  * are full of, so "can he build production RAG systems" lands on the work that
  * actually involved RAG. Returns '' when nothing scores.
  */
+function topicalTokens(query: string): string[] {
+  return normalizeQuery(query).tokens.filter((token) => !EVIDENCE_NOISE.has(token));
+}
+
+/**
+ * True when the question names a specific topic ("rockets") that none of TP's
+ * roles, case studies, projects or publications is about. Used to avoid
+ * dressing unrelated work up as evidence for a topic he has not worked on.
+ */
+export function evidenceTopicMissed(query: string): boolean {
+  return evidenceFor(query).topicMissed;
+}
+
+/**
+ * The evidence-only retrieval and the topic-miss verdict from one search, so a
+ * request does the work once instead of once for the context and again for the
+ * directive.
+ */
+export function evidenceFor(query: string, limit = 3): { context: string; topicMissed: boolean } {
+  const context = retrieveEvidenceContext(query, limit);
+  return { context, topicMissed: topicalTokens(query).length > 0 && context === '' };
+}
+
 export function retrieveEvidenceContext(query: string, limit = 3): string {
-  const { tokens } = normalizeQuery(query);
-  const topical = tokens.filter((token) => !EVIDENCE_NOISE.has(token));
+  const topical = topicalTokens(query);
   if (topical.length === 0) return '';
 
   // A source only counts as evidence when it is actually about the topic: a hit

@@ -6,8 +6,9 @@ import {
   type ConversationMessage,
 } from "@/lib/bixxie/security";
 import { requestDirectives } from "@/lib/bixxie/advocacy";
+import { createReplyAudit } from "@/lib/bixxie/audit";
 import { getBixxieFallback } from "@/lib/bixxie/fallback";
-import { retrieveEvidenceContext, retrievePortfolioContext } from "@/lib/bixxie/grounding";
+import { evidenceFor, retrievePortfolioContext } from "@/lib/bixxie/grounding";
 import { classifyProofTier } from "@/lib/bixxie/proof";
 import { BIXXIE_SYSTEM_PROMPT } from "@/lib/bixxie/prompt";
 
@@ -101,14 +102,22 @@ function createUntrustedPrompt(messages: ConversationMessage[], portfolioContext
   ].join("\n");
 }
 
+// Higher than a strict-lookup setting on purpose: replies should read differently
+// each time. Facts stay grounded by the PORTFOLIO_CONTEXT rules and the
+// structured-output schema. Set BIXXIE_TEMPERATURE (0 to 1) to tune it without a deploy.
+const DEFAULT_TEMPERATURE = 0.7;
+
+function readTemperature(): number {
+  const parsed = Number(process.env.BIXXIE_TEMPERATURE);
+  return Number.isFinite(parsed) && process.env.BIXXIE_TEMPERATURE?.trim() ? Math.min(1, Math.max(0, parsed)) : DEFAULT_TEMPERATURE;
+}
+
 async function createModelTextStream({ system, message, signal }: ModelStreamRequest): Promise<AsyncIterator<string>> {
   const { streamBixxieCompletion } = await import("@/lib/bixxie/provider");
   const stream = streamBixxieCompletion({
     system,
     message,
-    // Higher than a strict-lookup setting on purpose: replies should read differently each time.
-    // Facts stay grounded by the PORTFOLIO_CONTEXT rules and the structured-output schema.
-    temperature: 0.8,
+    temperature: readTemperature(),
     maxOutputTokens: 3500,
     signal,
   });
@@ -168,6 +177,7 @@ function createRedactedTextStream(
   abort: AbortController,
   requestSignal: AbortSignal,
   cleanup: () => void,
+  audit?: (replyText: string) => void,
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   const redactor = createStreamingRedactor();
@@ -182,12 +192,15 @@ function createRedactedTextStream(
   // already salvages whatever of that partial-but-genuine answer completed,
   // which is strictly better than throwing it away for a generic error.
   let sentAnyOutput = false;
+  // What the visitor actually received (post-redaction), for the after-the-fact audit.
+  let delivered = "";
 
   const enqueueRedacted = (controller: ReadableStreamDefaultController<Uint8Array>, text: string) => {
     const output = redactor.push(text);
     if (output && !cancelled) {
       controller.enqueue(encoder.encode(output));
       sentAnyOutput = true;
+      delivered += output;
     }
   };
 
@@ -210,8 +223,18 @@ function createRedactedTextStream(
         }
 
         const finalText = redactor.flush();
-        if (finalText && !cancelled) controller.enqueue(encoder.encode(finalText));
+        if (finalText && !cancelled) {
+          controller.enqueue(encoder.encode(finalText));
+          delivered += finalText;
+        }
         if (!cancelled) controller.close();
+        if (!cancelled && audit) {
+          try {
+            audit(delivered);
+          } catch {
+            // An audit problem must never affect the reply.
+          }
+        }
       } catch (error) {
         // Log metadata only (status code, timeout flag); never expose the
         // provider error itself or an unredacted/incomplete model line.
@@ -294,10 +317,10 @@ export async function handleBixxieRequest(
     // Capability and factual-about-his-work questions also get an evidence-only
     // retrieval pass, so there is real proof in the context to cite.
     const baseContext = retrievePortfolioContext(latestMessage.content);
-    const evidenceContext = classifyProofTier(messages) ? retrieveEvidenceContext(latestMessage.content) : "";
-    const portfolioContext = evidenceContext ? `${evidenceContext}\n${baseContext}` : baseContext;
+    const evidence = classifyProofTier(messages) ? evidenceFor(latestMessage.content) : { context: "", topicMissed: false };
+    const portfolioContext = evidence.context ? `${evidence.context}\n${baseContext}` : baseContext;
     const { controller, cleanup } = makeAbortController(request);
-    const directives = requestDirectives(messages, portfolioContext);
+    const directives = requestDirectives(messages, portfolioContext, Math.random, { topicMissed: evidence.topicMissed });
     const iterator = await createTextStream({
       system: [BIXXIE_SYSTEM_PROMPT, ...directives].join("\n\n"),
       message: createUntrustedPrompt(messages, portfolioContext),
@@ -320,7 +343,7 @@ export async function handleBixxieRequest(
     }
 
     return new Response(
-      createRedactedTextStream(iterator, firstChunk, controller, request.signal, cleanup),
+      createRedactedTextStream(iterator, firstChunk, controller, request.signal, cleanup, createReplyAudit(messages, portfolioContext)),
       { status: 200, headers: RESPONSE_HEADERS },
     );
   } catch (error) {

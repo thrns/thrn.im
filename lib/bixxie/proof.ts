@@ -94,7 +94,7 @@ function labelFor(id: string): string {
     case "stack":
       return `${name} in practice`;
     default:
-      return "Portfolio record";
+      return "";
   }
 }
 
@@ -167,18 +167,20 @@ const SECTION_LABELS: readonly string[] = [
 const pickLabel = (random: Random): string =>
   SECTION_LABELS[Math.min(SECTION_LABELS.length - 1, Math.floor(random() * SECTION_LABELS.length))];
 
-const formatFor = (label: string): string => `FORMAT: Answer.text gives the direct answer with a short explanation (stance first, then why). Beneath it add exactly one Section with label "${label}" (title null) whose only children are the evidence components below, then, only if a next step is called for, Links, then FollowUps last if natural. Evidence components, in order of preference: Facts with 2 to 5 rows (each row label = the source it comes from, e.g. a company, project or case study name; each value = one concrete, specific piece of evidence with its number or outcome); plus a CaseStudy, Experience or Projects component when the evidence maps to one app-owned record. Never restate the explanation inside the proof rows, never repeat a fact across rows, and never put the same fact in the Answer text and a row.`;
+const formatFor = (label: string): string => `FORMAT: Answer.text gives the direct answer with a short explanation (stance first, then why). Beneath it add exactly one Section with label "${label}" (title null) whose only children are the evidence components below, then, only if a next step is called for, Links, then FollowUps last if natural. Evidence components, in order of preference: Facts with 2 to 5 rows (each row label = the source it comes from, e.g. a company, project or case study name; each value = one concrete, specific piece of evidence with its number or outcome); plus a CaseStudy, Experience or Projects component when the evidence maps to one app-owned record. Never restate the explanation inside the proof rows, never repeat a fact across rows, and never put the same fact in the Answer text and a row. For a candidate shown without a [source] in brackets, label its row with a short topic of your own (two or three plain words, like "Scale" or "Ranking") and never use the words "Portfolio record". A row states something he did or achieved, and its value never repeats its own label (not "Product: ..." under a "Product" label). Never write a row that says something is unknown, not documented or not tracked: if that is all there is, use Notice kind="unknown" and no evidence section at all. Do not open your answer the same way as your earlier answers in USER_CONVERSATION.`;
 
 /** The per-request proof directive, or null when proof does not apply. */
 export function proofDirective(
   messages: ConversationMessage[],
   portfolioContext: string,
   random: Random = Math.random,
+  options: { topicMissed?: boolean } = {},
 ): string | null {
   const tier = classifyProofTier(messages);
   if (!tier) return null;
 
-  const candidates = extractProofCandidates(portfolioContext);
+  // The question names a topic none of his work is about: any "evidence" would be unrelated.
+  const candidates = options.topicMissed ? [] : extractProofCandidates(portfolioContext);
   if (candidates.length === 0) {
     return tier === "required"
       ? `REQUEST-SPECIFIC DIRECTIVE (trusted, from the server):
@@ -186,7 +188,7 @@ This is a can-he-do-it or is-he-suited question, but PORTFOLIO_CONTEXT contains 
       : null;
   }
 
-  const menu = candidates.map((candidate) => `- [${candidate.label}] ${candidate.line}`).join("\n");
+  const menu = candidates.map((candidate) => (candidate.label ? `- [${candidate.label}] ${candidate.line}` : `- ${candidate.line}`)).join("\n");
   const strength =
     tier === "required"
       ? "The visitor is asking whether TP can do something or is suited to something, so back the answer with evidence. The evidence section is required."

@@ -2,6 +2,7 @@ import { validateSpec, type Spec } from "@json-render/core";
 import { z } from "zod";
 
 import { catalog } from "@/lib/bixxie/catalog";
+import { isNegativeRow } from "@/lib/bixxie/negative";
 
 export type BixxieSpecFailureKind =
   | "invalid_spec_shape"
@@ -33,6 +34,39 @@ function readNumericCheck(schema: z.ZodTypeAny, checkName: string): number | und
     }
   }
   return undefined;
+}
+
+// Resume-speak and jargon the voice rules ban. The prompt asks the model not to
+// write these, but it still slips one in now and then, so swap them for the plain
+// word on the way to the screen (case kept). Only prose is touched: names of
+// projects, stack items and case studies come from closed enums, not strings.
+const PLAIN_WORDS: ReadonlyArray<[RegExp, string]> = [
+  [/\bevaluation harness(?:es)?\b/giu, "test setup"],
+  [/\bmeasurement systems?\b/giu, "tracking"],
+  [/\btelemetry\b/giu, "tracking"],
+  [/\bproduction-grade\b/giu, "production"],
+  [/\bbaked in\b/giu, "built in"],
+  [/\brobust(?:ly)?\b/giu, "solid"],
+  [/\bleveraged\b/giu, "used"],
+  [/\bleverag(?:e|es|ing)\b/giu, "use"],
+  [/\butili[sz]ed\b/giu, "used"],
+  [/\bspearheaded\b/giu, "led"],
+  [/\bfacilitated\b/giu, "helped"],
+  [/\bcutting-edge\b/giu, "new"],
+  [/\brabbit hole\b/giu, "deep dive"],
+];
+
+export function plainWords(text: string): string {
+  let result = text;
+  for (const [pattern, replacement] of PLAIN_WORDS) {
+    result = result.replace(pattern, (match) =>
+      match[0] === match[0].toUpperCase() ? `${replacement[0].toUpperCase()}${replacement.slice(1)}` : replacement,
+    );
+  }
+  // "an evaluation harness" -> "a test setup", not "an test setup".
+  return result.replace(/\b(an)(\s+)(test setup|solid|deep dive)\b/giu, (_m, article: string, space: string, word: string) =>
+    `${article[0] === "A" ? "A" : "a"}${space}${word}`,
+  );
 }
 
 /**
@@ -67,10 +101,11 @@ function normalizePropsDeep(schema: z.ZodTypeAny, value: unknown): unknown {
 
   if (schema instanceof z.ZodString) {
     const maxLength = schema.maxLength ?? readNumericCheck(schema, "max_length");
-    if (typeof value === "string" && typeof maxLength === "number" && value.length > maxLength) {
-      return value.slice(0, maxLength);
+    const plain = typeof value === "string" ? plainWords(value) : value;
+    if (typeof plain === "string" && typeof maxLength === "number" && plain.length > maxLength) {
+      return plain.slice(0, maxLength);
     }
-    return value;
+    return plain;
   }
 
   if (schema instanceof z.ZodObject) {
@@ -151,6 +186,49 @@ function backfillPropsFromElementSiblings(type: unknown, elementRecord: Record<s
   return changed ? existingProps : elementRecord.props;
 }
 
+// An evidence row that says something is missing ("not documented", "no experience
+// with X") is padding, not evidence: the prompt says to use a Notice for that, but
+// the model still slips one in now and then. Drop such Facts rows, and drop a Facts
+// (and any now-empty Section around it) when none are left, rather than showing a
+// card whose only content is a negative. A Notice is never touched.
+function pruneNegativeFactRows(elements: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...elements };
+  const removed = new Set<string>();
+
+  for (const [key, raw] of Object.entries(next)) {
+    const element = raw as { type?: unknown; props?: { rows?: unknown } } | null;
+    if (!element || element.type !== "Facts" || !Array.isArray(element.props?.rows)) continue;
+    const rows = element.props.rows as Array<{ label?: unknown; value?: unknown }>;
+    const kept = rows.filter((row) => !isNegativeRow(row));
+    if (kept.length === rows.length) continue;
+    if (kept.length === 0) removed.add(key);
+    else next[key] = { ...element, props: { ...element.props, rows: kept } };
+  }
+
+  // Remove emptied Facts, then any Section whose children are all gone (to a fixed point).
+  let changed = removed.size > 0;
+  while (changed) {
+    changed = false;
+    for (const [key, raw] of Object.entries(next)) {
+      if (removed.has(key)) continue;
+      const element = raw as { type?: unknown; children?: unknown } | null;
+      if (!element || !Array.isArray(element.children)) continue;
+      const children = (element.children as unknown[]).filter((child) => typeof child !== "string" || !removed.has(child));
+      if (children.length !== element.children.length) {
+        next[key] = { ...element, children };
+        changed = true;
+      }
+      if (element.type === "Section" && children.length === 0 && (element.children as unknown[]).length > 0) {
+        removed.add(key);
+        changed = true;
+      }
+    }
+  }
+
+  for (const key of removed) delete next[key];
+  return next;
+}
+
 function normalizeSpec(value: object): unknown {
   const candidate = value as { elements?: unknown };
   if (!candidate.elements || typeof candidate.elements !== "object" || Array.isArray(candidate.elements)) {
@@ -185,7 +263,10 @@ function normalizeSpec(value: object): unknown {
     }),
   );
 
-  return changed ? { ...value, elements } : value;
+  const pruned = pruneNegativeFactRows(changed ? elements : (candidate.elements as Record<string, unknown>));
+  const prunedChanged = changed || Object.keys(pruned).length !== Object.keys(candidate.elements as object).length
+    || JSON.stringify(pruned) !== JSON.stringify(changed ? elements : candidate.elements);
+  return prunedChanged ? { ...value, elements: pruned } : value;
 }
 
 /** Validate generated content before it is allowed to reach the renderer. */
@@ -318,6 +399,10 @@ export function extractRenderablePrefix(value: unknown): Spec | null {
   for (const element of Object.values(complete)) {
     element.children = element.children.filter((childKey) => childKey in complete);
   }
+
+  const prunedComplete = pruneNegativeFactRows(complete as unknown as Record<string, unknown>) as unknown as Record<string, RenderableElement>;
+  for (const key of Object.keys(complete)) delete complete[key];
+  Object.assign(complete, prunedComplete);
 
   const root = complete[candidate.root];
   if (!root || root.type !== "Answer") return null;
