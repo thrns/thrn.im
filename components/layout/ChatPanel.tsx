@@ -65,7 +65,7 @@ export default function ChatPanel() {
         tabIndex={-1}
         data-r="chat-panel"
         onKeyDown={focus.onKeyDown}
-        style={css(`${aside};transition:transform var(--dur-slow) var(--ease), visibility var(--dur-slow);transform:${visible ? 'none' : 'translateX(105%)'};visibility:${visible ? 'visible' : 'hidden'}`)}
+        style={css(`${aside};transition:transform var(--dur-slow) var(--ease), visibility var(--dur-slow);transform:${visible ? 'none' : 'translateX(105%)'};will-change:transform;visibility:${visible ? 'visible' : 'hidden'}`)}
       >
         <div style={css('flex:none;display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--border)')}>
           <BixxieMark size={32} />

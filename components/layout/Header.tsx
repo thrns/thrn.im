@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { css } from '@/lib/css';
 import { Button, IconButton, Icon, Kbd, NavBar } from '@/components/ui';
@@ -11,10 +11,12 @@ import { usePresence } from './usePresence';
 export default function Header() {
   const { s, setState, openChat, openGuide, setDark, navItems, active } = useChrome();
   const morePresence = usePresence(s.moreOpen, 200);
+  // The intro fade runs once; leaving it attached lets focus changes (e.g. opening the chat) replay it.
+  const [intro, setIntro] = useState(true);
   return (
     <>
       {/* ---------- header ---------- */}
-      <header data-anim="1" style={css('animation:fadeIn .6s var(--ease) 0ms both;position:fixed;top:0;left:0;right:0;z-index:20;background:color-mix(in srgb, var(--background) 88%, transparent);backdrop-filter:blur(8px)')}>
+      <header data-anim={intro ? '1' : undefined} onAnimationEnd={(e) => { if (e.target === e.currentTarget) setIntro(false); }} style={css(`${intro ? 'animation:fadeIn .6s var(--ease) 0ms both;' : ''}position:fixed;top:0;left:0;right:0;z-index:20;background:color-mix(in srgb, var(--background) 88%, transparent);backdrop-filter:blur(8px);transform:translateZ(0);will-change:transform`)}>
         <div data-r="hdr" style={css('max-width:var(--content-width);margin:0 auto;padding:0 var(--page-gutter);display:flex;align-items:center;justify-content:space-between;gap:12px')}>
           <NavBar items={navItems} brand={{ href: '/' }} />
           <button

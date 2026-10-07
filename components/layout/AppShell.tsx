@@ -7,11 +7,21 @@ import { ChromeProvider, useChrome } from './ChromeContext';
 import Header from './Header';
 import { EmailDialog, GuideDialog } from './Dialogs';
 
-const ChatPanel = dynamic(() => import('./ChatPanel'), { ssr: false });
+const loadChatPanel = () => import('./ChatPanel');
+const ChatPanel = dynamic(loadChatPanel, { ssr: false });
 
 function LazyChatPanel() {
   const { s } = useChrome();
   const [hasOpened, setHasOpened] = useState(false);
+
+  // Load and mount the (still closed) panel once the page is idle, so the first open animates exactly like later ones
+  // instead of paying the chunk load and mount cost mid-transition.
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1200));
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = idle(() => { void loadChatPanel().then(() => setHasOpened(true)); });
+    return () => cancel(handle);
+  }, []);
 
   useEffect(() => {
     if (s.chat) setHasOpened(true);
