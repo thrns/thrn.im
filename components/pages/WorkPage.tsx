@@ -14,11 +14,11 @@ function RoleItem({ r, i, last }: { r: Role; i: number; last: boolean }) {
       <div data-r="rolepad" data-anim="1" style={css(`padding:0 0 ${last ? '0' : '48px'} 35px;animation:fadeUp .7s var(--ease) ${300 + i * 70}ms both`)}>
         <h2 style={css('margin:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px')}>
           <span style={css('display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px')}>
-            <a className="role-link" href={r.url} target="_blank" rel="noopener" style={css(`${ROLE_LINK};font-weight:600`)}>{t1}</a>
+            <a className="role-link" href={r.url} target="_blank" rel="noopener noreferrer" style={css(`${ROLE_LINK};font-weight:600`)}>{t1}</a>
             {!!r.summary2 && <span aria-hidden="true" style={css('font-size:14px;line-height:21px;font-weight:300;color:var(--muted-foreground)')}>|</span>}
-            {!!r.summary2 && <a className="role-link" href={r.url} target="_blank" rel="noopener" style={css(`${ROLE_LINK};font-weight:600`)}>{t2 || ''}</a>}
+            {!!r.summary2 && <a className="role-link" href={r.url} target="_blank" rel="noopener noreferrer" style={css(`${ROLE_LINK};font-weight:600`)}>{t2 || ''}</a>}
           </span>
-          <a className="role-link" href={r.url} target="_blank" rel="noopener" style={css(`${ROLE_LINK};font-weight:300;font-style:italic`)}>{r.company}</a>
+          <a className="role-link" href={r.url} target="_blank" rel="noopener noreferrer" style={css(`${ROLE_LINK};font-weight:300;font-style:italic`)}>{r.company}</a>
         </h2>
         <p className="p light" style={css('margin:12px 0 0;max-width:var(--measure);color:var(--muted-foreground)')}>
           {r.summary}{' '}

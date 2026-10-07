@@ -8,5 +8,5 @@ const STYLE = 'text-decoration-color:var(--clay)';
 export default function TextLink({ href, onClick, children }: { href: string; onClick?: (e: React.MouseEvent) => void; children: ReactNode }) {
   if (href.startsWith('/')) return <Link href={href} onClick={onClick} style={css(STYLE)}>{children}</Link>;
   if (href.startsWith('mailto:') || href.startsWith('#')) return <a href={href} onClick={onClick} style={css(STYLE)}>{children}</a>;
-  return <a href={href} target="_blank" rel="noopener" style={css(STYLE)}>{children}</a>;
+  return <a href={href} target="_blank" rel="noopener noreferrer" style={css(STYLE)}>{children}</a>;
 }

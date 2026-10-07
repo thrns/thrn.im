@@ -64,6 +64,7 @@ const PROFILE_SOURCE: GroundingSource = {
     PROFILE.thirdSlatePocketlink,
     PROFILE.hyrAgroBot,
     PROFILE.research,
+    PROFILE.researchInterest,
     PROFILE.pastInterests,
   ].join('\n'),
   keywords: ['profile', 'about', 'contact', 'email', 'hire', 'reach', 'availability', 'education', 'study'],

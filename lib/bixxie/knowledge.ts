@@ -220,7 +220,7 @@ export const BIXXIE_KNOWLEDGE: readonly BixxieKnowledgeItem[] = [
     "status": "known",
     "statusRaw": "KNOWN",
     "visibility": "PUBLIC",
-    "answer": "- **Machine Learning Engineer:** Oct 2023–Present.\n- **Internal Operations & Technical Lead:** Jan 2024–Present.\n- **Corporate Relations Lead:** Jan 2024–Present.\n\nThe public compact title can be **“Machine Learning Engineer | Internal Operations & Technical Lead”**, with Corporate Relations Lead as an additional leadership role. UBC AgroBot is TP's current ongoing role."
+    "answer": "- **Machine Learning Engineer:** Oct 2023–Jan 2026.\n- **Internal Operations & Technical Lead:** Jan 2024–Jan 2026.\n- **Corporate Relations Lead:** Jan 2024–Jan 2026.\n\nThe public compact title can be **“Machine Learning Engineer | Internal Operations & Technical Lead”**, with Corporate Relations Lead as an additional leadership role. The AgroBot role ended in Jan 2026."
   },
   {
     "id": 24,
@@ -1201,7 +1201,7 @@ export const BIXXIE_KNOWLEDGE: readonly BixxieKnowledgeItem[] = [
     "status": "known",
     "statusRaw": "KNOWN",
     "visibility": "PUBLIC",
-    "answer": "**Machine Learning Engineer: Oct 2023–Present. Internal Operations & Technical Lead: Jan 2024–Present. Corporate Relations Lead: Jan 2024–Present.** This is TP's current ongoing engineering/design-team role."
+    "answer": "**Machine Learning Engineer: Oct 2023–Jan 2026. Internal Operations & Technical Lead: Jan 2024–Jan 2026. Corporate Relations Lead: Jan 2024–Jan 2026.** The role ended in Jan 2026."
   },
   {
     "id": 133,
@@ -5638,7 +5638,7 @@ export const BIXXIE_KNOWLEDGE: readonly BixxieKnowledgeItem[] = [
     "status": "partial",
     "statusRaw": "KNOWN/PARTIAL",
     "visibility": "PUBLIC",
-    "answer": "His current ongoing role is **UBC AgroBot**, where he combines ML with technical operations/corporate relations. Outside that, he is finishing UBC, job-searching for applied-AI roles, and actively building/maintaining personal systems such as **Bixxie, RepoView, OutKey/OutPost/OutPay**. TekkScope/TraceBox/TinyShell/TabFM are currently paused or research-stage rather than his daily focus."
+    "answer": "His most recent role is **Berribot** (AI Engineer, ended Apr 2026); before that he spent Oct 2023–Jan 2026 at **UBC AgroBot** combining ML with technical operations/corporate relations. Outside that, he is finishing UBC, job-searching for applied-AI roles, and actively building/maintaining personal systems such as **Bixxie, RepoView, OutKey/OutPost/OutPay**. TekkScope/TraceBox/TinyShell/TabFM are currently paused or research-stage rather than his daily focus."
   },
   {
     "id": 626,

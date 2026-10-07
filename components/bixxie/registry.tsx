@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { defineRegistry } from "@json-render/react";
-import mermaid from "mermaid";
 
 import StatusPill from "@/components/common/StatusPill";
 import { Tag } from "@/components/common/Tag";
@@ -13,6 +12,7 @@ import { CASES, EDUCATION, PROJECTS, ROLES, STACK } from "@/lib/data";
 import { css } from "@/lib/css";
 import { EMAIL, PATH } from "@/lib/chrome";
 import { catalog } from "@/lib/bixxie/catalog";
+import { renderMermaid } from "@/lib/mermaid";
 
 type BixxieActions = { onAsk: (question: string) => void; onNavigate: () => void };
 
@@ -21,7 +21,6 @@ export const BixxieActionContext = createContext<BixxieActions | null>(null);
 // strict + htmlLabels:false reject click/href callbacks and raw HTML in node
 // labels regardless of what the model's definition string tries to include —
 // defense-in-depth on top of the prompt-level instruction not to write them.
-mermaid.initialize({ startOnLoad: false, securityLevel: "strict", htmlLabels: false, theme: "neutral" });
 
 const LINK_DESTINATIONS = [
   { key: "email", label: "Email", href: `mailto:${EMAIL}` },
@@ -215,11 +214,19 @@ export const { registry } = defineRegistry(catalog, {
         let cancelled = false;
         setFailed(false);
 
-        mermaid
-          .parse(props.definition)
-          .then(() => mermaid.render(`bixxie-diagram-${id}`, props.definition))
+        renderMermaid(`bixxie-diagram-${id}`, props.definition, {
+          startOnLoad: false,
+          securityLevel: "strict",
+          htmlLabels: false,
+          theme: "neutral",
+        }, true)
           .then(({ svg }) => {
-            if (!cancelled && containerRef.current) containerRef.current.innerHTML = svg;
+            if (!cancelled && containerRef.current) {
+              containerRef.current.innerHTML = svg;
+              const diagram = containerRef.current.querySelector('svg');
+              diagram?.setAttribute('focusable', 'false');
+              diagram?.removeAttribute('tabindex');
+            }
           })
           .catch(() => {
             // Malformed or disallowed definition (e.g. a directive strict

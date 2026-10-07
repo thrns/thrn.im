@@ -137,14 +137,14 @@ export function Spinner({ size = 16, style }: { size?: number; style?: React.CSS
 }
 
 /* ---------- Switch ---------- */
-export function Switch({ checked = false, onChange, disabled = false, label, style }: {
-  checked?: boolean; onChange?: (v: boolean) => void; disabled?: boolean; label?: React.ReactNode; style?: React.CSSProperties;
+export function Switch({ checked = false, onChange, disabled = false, label, ariaLabel, style }: {
+  checked?: boolean; onChange?: (v: boolean) => void; disabled?: boolean; label?: React.ReactNode; ariaLabel?: string; style?: React.CSSProperties;
 }) {
   const s = { w: 32, h: 18, t: 16 };
   return (
     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px', fontWeight: 500, color: 'var(--foreground)', ...style }}>
       <button
-        type="button" role="switch" aria-checked={checked} disabled={disabled} onClick={() => onChange && onChange(!checked)}
+        type="button" role="switch" aria-checked={checked} aria-label={ariaLabel} disabled={disabled} onClick={() => onChange && onChange(!checked)}
         style={{
           position: 'relative', width: s.w, height: s.h, padding: 0, border: 0, outline: 0, flexShrink: 0, borderRadius: 999, cursor: 'inherit',
           background: checked ? 'var(--primary)' : 'linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.2)), var(--secondary)',
@@ -204,7 +204,7 @@ export type NavItemData = { hint?: string; label: string; href?: string; active?
 
 export function NavBar({ items = [], brand }: { items?: NavItemData[]; brand?: { href?: string; label?: string } }) {
   return (
-    <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 10, fontFamily: 'var(--font-sans)' }}>
+    <nav aria-label="Primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 10, fontFamily: 'var(--font-sans)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         {brand && (
           <Link href={brand.href || '/'} aria-label={brand.label || 'Home'} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: 'var(--muted)', textDecoration: 'none' }}>

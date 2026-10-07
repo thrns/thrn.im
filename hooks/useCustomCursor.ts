@@ -1,11 +1,25 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useChrome } from '@/components/layout/ChromeContext';
 
 /** Custom cursor: dot, trail, morphing shapes and click ripples. Driven by the cursor settings in the chrome state. */
 export function useCustomCursor() {
   const { sRef, setState } = useChrome();
+  const [motionAllowed, setMotionAllowed] = useState(false);
+
   useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setMotionAllowed(!preference.matches);
+    update();
+    preference.addEventListener('change', update);
+    return () => preference.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (!motionAllowed) {
+      document.documentElement.classList.remove('pf-cc');
+      return;
+    }
     /* custom cursor */
     const d = document.createElement('div');
     d.setAttribute('aria-hidden', 'true');
@@ -106,5 +120,5 @@ export function useCustomCursor() {
       document.documentElement.classList.remove('pf-cc');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [motionAllowed]);
 }

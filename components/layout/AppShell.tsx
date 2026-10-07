@@ -1,19 +1,55 @@
 'use client';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { css } from '@/lib/css';
 import { useCustomCursor } from '@/hooks/useCustomCursor';
-import { ChromeProvider } from './ChromeContext';
+import { ChromeProvider, useChrome } from './ChromeContext';
 import Header from './Header';
-import ChatPanel from './ChatPanel';
 import { EmailDialog, GuideDialog } from './Dialogs';
+
+const ChatPanel = dynamic(() => import('./ChatPanel'), { ssr: false });
+
+function LazyChatPanel() {
+  const { s } = useChrome();
+  const [hasOpened, setHasOpened] = useState(false);
+
+  useEffect(() => {
+    if (s.chat) setHasOpened(true);
+  }, [s.chat]);
+
+  useEffect(() => {
+    if (!s.chat) return;
+    let frame = 0;
+    let attempts = 0;
+    const focusWhenReady = () => {
+      attempts += 1;
+      const dialog = document.querySelector<HTMLElement>('[data-r="chat-panel"]');
+      const target = dialog?.querySelector<HTMLElement>('[data-dialog-initial-focus]');
+      if (dialog && target && !dialog.inert && dialog.getAttribute('aria-hidden') !== 'true' && getComputedStyle(dialog).visibility !== 'hidden') {
+        target.focus({ preventScroll: true });
+        return;
+      }
+      if (attempts < 120) frame = requestAnimationFrame(focusWhenReady);
+    };
+    frame = requestAnimationFrame(focusWhenReady);
+    return () => cancelAnimationFrame(frame);
+  }, [s.chat]);
+
+  return hasOpened || s.chat ? <ChatPanel /> : null;
+}
 
 function Frame({ children }: { children: ReactNode }) {
   useCustomCursor();
+  const { s } = useChrome();
+  const modalOpen = s.chat || s.email || s.guide || s.info;
   return (
     <div id="top" style={css('min-height:100vh;display:flex;flex-direction:column;background:var(--background);color:var(--foreground);font-family:var(--font-sans);transition:background-color .35s var(--ease),color .35s var(--ease)')}>
-      <Header />
-      {children}
-      <ChatPanel />
+      <div id="site-content" inert={modalOpen} style={css('display:flex;flex:1 0 auto;flex-direction:column;min-height:100vh')}>
+        <a className="skip-link" href="#main-content">Skip to main content</a>
+        <Header />
+        {children}
+      </div>
+      <LazyChatPanel />
       <EmailDialog />
       <GuideDialog />
     </div>

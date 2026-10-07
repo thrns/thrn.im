@@ -15,8 +15,9 @@ const INIT: ChromeState = {
 type Setter = (p: Partial<ChromeState> | ((s: ChromeState) => Partial<ChromeState>)) => void;
 export type Chrome = {
   s: ChromeState; sRef: React.MutableRefObject<ChromeState>; setState: Setter;
+  dialogOpeners: React.MutableRefObject<{ chat: HTMLElement | null; email: HTMLElement | null; guide: HTMLElement | null; info: HTMLElement | null }>;
   setDark: (d: boolean) => void; copyAddr: () => void; saveCur: (p: Partial<ChromeState>) => void;
-  openChat: (e?: React.SyntheticEvent) => void; askQuestion: (question: string) => void; closeChat: () => void; openEmail: (e?: React.SyntheticEvent) => void;
+  openChat: (e?: React.SyntheticEvent) => void; askQuestion: (question: string) => void; closeChat: () => void; openEmail: (e?: React.SyntheticEvent) => void; openGuide: (e?: React.SyntheticEvent) => void;
   closeEmail: () => void; closeInfo: () => void; closeGuide: () => void;
   active: string;
   navItems: { hint: string; label: string; href: string; active: boolean }[];
@@ -29,6 +30,7 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
   const [s, _set] = useState<ChromeState>(INIT);
   const sRef = useRef(s);
   sRef.current = s;
+  const dialogOpeners = useRef<{ chat: HTMLElement | null; email: HTMLElement | null; guide: HTMLElement | null; info: HTMLElement | null }>({ chat: null, email: null, guide: null, info: null });
   const setState: Setter = (p) => _set((prev) => ({ ...prev, ...(typeof p === 'function' ? p(prev) : p) }));
   const t = useRef<{ copy?: ReturnType<typeof setTimeout> }>({});
   const api = useRef<any>({});
@@ -89,21 +91,23 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
         if (st.email) setState({ email: false });
         else if (st.guide) setState({ guide: false });
         else if (st.info) setState({ info: false });
+        else if (st.chat) setState({ chat: false });
         else if (st.curOpen) setState({ curOpen: false });
-        else setState({ chat: false });
+        else if (st.moreOpen) { setState({ moreOpen: false }); document.querySelector<HTMLElement>('[aria-label="More"]')?.focus(); }
+        else if (st.menu) { setState({ menu: false }); document.querySelector<HTMLElement>('[aria-label="Collection"]')?.focus(); }
         return;
       }
       const tg = e.target as HTMLElement, tag = tg && tg.tagName;
       if (e.metaKey || e.ctrlKey || e.altKey || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (tg && tg.isContentEditable)) return;
       const k = e.key.length === 1 ? e.key.toLowerCase() : '';
-      if (k === '?') { e.preventDefault(); setState((x) => ({ guide: !x.guide, info: false })); return; }
-      if (st.chat || st.guide) return;
-      if (e.key === 'ArrowLeft' && !st.email && !st.info && /^\/case-studies\/[^/]+/.test(pathRef.current)) { e.preventDefault(); router.push(PATH.cases); return; }
       if (st.email) {
         if (k === 'k') { e.preventDefault(); api.current.copyAddr(); }
         else if (k === 'j') { e.preventDefault(); window.location.href = 'mailto:' + EMAIL; }
         return;
       }
+      if (st.chat || st.guide || st.info) return;
+      if (k === '?') { e.preventDefault(); openGuide(); return; }
+      if (e.key === 'ArrowLeft' && /^\/case-studies\/[^/]+/.test(pathRef.current)) { e.preventDefault(); router.push(PATH.cases); return; }
       if (st.curOpen) {
         if (k === 'o') { e.preventDefault(); api.current.saveCur({ curOn: !st.curOn }); return; }
         if (k === 'f') { e.preventDefault(); api.current.saveCur({ curShape: SHAPES[(SHAPES.indexOf(st.curShape) + 1) % 3], curOn: true }); return; }
@@ -114,11 +118,11 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       }
-      if (k === 'm') { e.preventDefault(); setState({ email: true, copied: false }); }
+      if (k === 'm') { e.preventDefault(); openEmail(); }
       else if (go[k]) { router.push(go[k]); }
       else if (k === 'd') api.current.setDark(!sRef.current.dark);
       else if (k === 'c') setState((x) => ({ curOpen: !x.curOpen }));
-      else if (k === '/') { e.preventDefault(); setState({ chat: true }); }
+      else if (k === '/') { e.preventDefault(); openChat(); }
     };
     window.addEventListener('keydown', key);
 
@@ -138,14 +142,38 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const navItems = NAV.map(([hint, label, id]) => ({ hint, label, href: PATH[id], active: active === id }));
-  const openEmail = (e?: React.SyntheticEvent) => { e && e.preventDefault && e.preventDefault(); setState({ email: true, copied: false }); };
-  const openChat = (e?: React.SyntheticEvent) => { e && e.preventDefault && e.preventDefault(); setState({ chat: true }); };
-  const askQuestion = (question: string) => setState({ chat: true, moreOpen: false, queuedQuestion: question });
+  const rememberOpener = (key: keyof typeof dialogOpeners.current, e?: React.SyntheticEvent) => {
+    const target = e?.currentTarget;
+    const active = document.activeElement;
+    dialogOpeners.current[key] = target instanceof HTMLElement
+      ? target
+      : active instanceof HTMLElement && active !== document.body
+        ? active
+        : null;
+  };
+  const openEmail = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    if (!sRef.current.email) rememberOpener('email', e);
+    setState({ email: true, copied: false, chat: false, guide: false, info: false, curOpen: false, moreOpen: false, menu: false });
+  };
+  const openChat = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    if (!sRef.current.chat) rememberOpener('chat', e);
+    setState({ chat: true, email: false, guide: false, info: false, curOpen: false, moreOpen: false, menu: false });
+  };
+  const openGuide = (e?: React.SyntheticEvent) => {
+    if (!sRef.current.guide) rememberOpener('guide', e);
+    setState({ guide: true, email: false, chat: false, info: false, curOpen: false, moreOpen: false, menu: false });
+  };
+  const askQuestion = (question: string) => {
+    if (!sRef.current.chat) rememberOpener('chat');
+    setState({ chat: true, email: false, guide: false, info: false, curOpen: false, moreOpen: false, menu: false, queuedQuestion: question });
+  };
   const closeChat = () => setState({ chat: false, info: false });
   const closeEmail = () => setState({ email: false });
   const closeInfo = () => setState({ info: false });
   const closeGuide = () => setState({ guide: false });
 
-  const value: Chrome = { s, sRef, setState, setDark, copyAddr, saveCur, openChat, askQuestion, closeChat, openEmail, closeEmail, closeInfo, closeGuide, active, navItems };
+  const value: Chrome = { s, sRef, setState, dialogOpeners, setDark, copyAddr, saveCur, openChat, askQuestion, closeChat, openEmail, openGuide, closeEmail, closeInfo, closeGuide, active, navItems };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -10,12 +10,13 @@ export const PROFILE = {
   thirdSlatePocketlink: 'Before that, I co-founded ThirdSlate, a platform that helps people learn more efficiently, and Pocketlink, where creators can publish, sell, and grow their work all in one place.',
   hyrAgroBot: 'I also worked as a Technical Consultant at Hyr and as an AI Engineer at UBC AgroBot, where I got to use AI on agriculture problems.',
   research: "These days I'm deep in the research side of AI, exploring it and building as I go.",
+  researchInterest: "I'm also curious about the theory behind modern AI and what it takes to reach more general systems, and I'm looking for a team where I can build products close to that research.",
   pastInterests: 'In a past life, I was into electronics and circuitry, and I spent a lot of time on debate and athletics.',
   workLink: 'You can learn more about my work here.',
   email: EMAIL,
   // Explicit anchors so role recency never has to be inferred from prose or array
   // order — these must match a `company` value in ROLES.
-  currentRoleCompany: 'UBC AgroBot',
+  currentRoleCompany: null as string | null,
   mostRecentCompletedRoleCompany: 'Berribot',
 } as const;
 
@@ -173,7 +174,7 @@ export const RECRUITER_INFO = {
   relocation: 'Targets roles outside Vancouver, but an unqualified "open to relocating anywhere" has not been confirmed — do not assume unlimited relocation.',
   employmentPreference: 'Full-time, new-grad AI roles are the clearest target. An internship or contract preference has not been confirmed.',
   availability: 'No confirmed start date exists — do not invent one.',
-  resume: 'No separate canonical resume link is currently published — do not invent or guess a URL; point them to the portfolio or to get in touch directly.',
+  resume: "The resume is published as a PDF on the portfolio's Resume page (/resume) — point people there and do not invent any other URL.",
 } as const;
 
 export type PersonalTopic = { id: string; title: string; keywords: string[]; text: string };
@@ -369,26 +370,6 @@ export type Role = {
 // way around — do not reorder this array without updating the dates.
 export const ROLES: Role[] = [
   {
-    rail: 'var(--foreground)',
-    title: "AI Engineer | Technical Operations & Partnerships Lead",
-    altTitle: "Corporate Relations Lead",
-    company: "UBC AgroBot",
-    url: "https://ubcagrobot.com/",
-    summary: "Spent a few years on UBC's robotics team training the vision models that let the robot see what's growing in a field.",
-    summary2: "Took on technical operations and partnerships for AgroBot, which meant talking to sponsors as much as to engineers.",
-    highlight: '',
-    wins: [
-      "Computer vision: worked on agricultural-robotics perception models including YOLO and Faster R-CNN, reaching approximately 86% mAP across 8,000+ images.",
-      "Research & engineering operations: produced 20+ literature reviews, 12 briefing notes, 6 dashboards, 10 datasets, 3 proposals, and 10 reports/publications.",
-      "Partnerships: helped secure 6 partnerships and $8K+ in commitments while maintaining an 80+ prospect pipeline.",
-      "Operations: worked across 7 team leads, 25+ stakeholders, and a $15K+ operations budget.",
-    ],
-    stack: '',
-    employmentType: "Part-time, student engineering/design team",
-    startDate: '2023-10',
-    endDate: null,
-  },
-  {
     rail: 'var(--border)',
     title: "AI Engineer",
     company: "Berribot",
@@ -423,6 +404,26 @@ export const ROLES: Role[] = [
     stack: '',
     employmentType: "Founder",
     startDate: '2025-03',
+    endDate: '2026-01',
+  },
+  {
+    rail: 'var(--foreground)',
+    title: "AI Engineer | Technical Operations & Partnerships Lead",
+    altTitle: "Corporate Relations Lead",
+    company: "UBC AgroBot",
+    url: "https://ubcagrobot.com/",
+    summary: "Spent a few years on UBC's robotics team training the vision models that let the robot see what's growing in a field.",
+    summary2: "Took on technical operations and partnerships for AgroBot, which meant talking to sponsors as much as to engineers.",
+    highlight: '',
+    wins: [
+      "Computer vision: worked on agricultural-robotics perception models including YOLO and Faster R-CNN, reaching approximately 86% mAP across 8,000+ images.",
+      "Research & engineering operations: produced 20+ literature reviews, 12 briefing notes, 6 dashboards, 10 datasets, 3 proposals, and 10 reports/publications.",
+      "Partnerships: helped secure 6 partnerships and $8K+ in commitments while maintaining an 80+ prospect pipeline.",
+      "Operations: worked across 7 team leads, 25+ stakeholders, and a $15K+ operations budget.",
+    ],
+    stack: '',
+    employmentType: "Part-time, student engineering/design team",
+    startDate: '2023-10',
     endDate: '2026-01',
   },
   {

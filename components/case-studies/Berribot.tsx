@@ -1,12 +1,13 @@
 import { Fragment } from 'react';
-import type { MouseEventHandler, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { css } from '@/lib/css';
 import { D } from '@/lib/case-studies/berribot-d';
 
-export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCases: MouseEventHandler }) {
+export default function BerribotArticle({ toc }: { toc: ReactNode }) {
   return (
     <article style={css("max-width:var(--content-width);margin:0 auto;padding:var(--space-6xl) var(--page-gutter) 0;box-sizing:border-box")}>
-      <a href="/case-studies" onClick={goCases} aria-label="Back to case studies" data-anim="1" style={css("display:inline-flex;gap:6px;padding:4px 8px;background:var(--muted);font-size:14px;line-height:20px;letter-spacing:-.011em;text-decoration:none;animation:fadeUp .6s var(--ease) both")} className="hv-clay"><span aria-hidden="true" style={css("color:var(--muted-foreground)")}>[←]</span>Case studies</a>
+      <Link href="/case-studies" aria-label="Back to case studies" data-anim="1" style={css("display:inline-flex;gap:6px;padding:4px 8px;background:var(--muted);font-size:14px;line-height:20px;letter-spacing:-.011em;text-decoration:none;animation:fadeUp .6s var(--ease) both")} className="hv-clay"><span aria-hidden="true" style={css("color:var(--muted-foreground)")}>[←]</span>Case studies</Link>
       <h1 className="h1" data-anim="1" style={css("margin:32px 0 0;animation:fadeUp .7s var(--ease) 60ms both")}>Berribot: Engineering Production AI Systems</h1>
       <div aria-hidden="true" data-anim="1" style={css("width:32px;height:1px;margin:16px 0 0;background:var(--foreground);animation:fadeUp .7s var(--ease) 135ms both")}></div>
       <p className="p light" data-anim="1" style={css("margin:16px 0 0;max-width:520px;line-height:23px;animation:fadeUp .7s var(--ease) 160ms both")}>AI Engineer. I owned the system that matches and ranks candidates for job descriptions, and helped with tutoring, evals and deployment.</p>
@@ -16,7 +17,7 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
           <Fragment key={$i4}><div data-anim="1" style={css("animation:fadeUp .7s var(--ease) 260ms both;background:color-mix(in srgb,var(--foreground) 9%,var(--card));border:1px solid color-mix(in srgb,var(--foreground) 14%,var(--card));padding:12px 14px")}>
               <div style={css("font-size:18px;line-height:24px;font-weight:600;letter-spacing:-.011em")}>{s.v}</div>
               <div className="p light" style={css("margin-top:6px")}>{s.l}</div>
-              <div className="p-sm light" style={css("margin-top:2px;color:var(--muted-foreground)")}>{s.n}</div>
+              <div className="p-sm light" style={css("margin-top:2px;color:var(--stat-muted-foreground)")}>{s.n}</div>
             </div></Fragment>
         ))}
       </div>
@@ -38,7 +39,7 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
           <span className="p light" data-label="Technologies" style={css("display:flex;flex-wrap:wrap;gap:8px 10px")}>
             {(D.tech || []).map((x, $i6) => (
               <Fragment key={$i6}><span style={css("white-space:nowrap")}>
-                  <a href={x.url} target="_blank" rel="noopener" style={css("text-decoration:underline;text-decoration-color:var(--foreground);text-decoration-thickness:1.5px;text-underline-offset:5px")}>{x.name}</a>
+                  <a href={x.url} target="_blank" rel="noopener noreferrer" style={css("text-decoration:underline;text-decoration-color:var(--foreground);text-decoration-thickness:1.5px;text-underline-offset:5px")}>{x.name}</a>
                   {(x.comma) ? (<>,</>) : null}
                 </span></Fragment>
             ))}
@@ -52,9 +53,9 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
           <span data-mark="1" aria-hidden="true"></span>
           <p className="eyebrow" data-reveal="1" style={css("margin:0")}>[1] Context & ownership</p>
           <h2 className="h2" data-reveal="1" style={css("margin:12px 0 0;max-width:var(--measure);text-wrap:balance")}>How the systems connected, and where my ownership began and ended.</h2>
-          <figure data-reveal="1" data-fig="1" style={css("margin:32px 0 0")}>
+          <figure data-reveal="1" data-fig="1" style={css("margin:32px 0 0")} aria-labelledby="case-figure-caption-berribot-1">
             <div style={css("border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px;overflow-x:auto")}><div data-mmd="context" style={css("min-width:560px")}></div></div>
-            <figcaption className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 1 · Search & Match and BerriTutor (highlighted) are the two systems I worked on directly.</figcaption>
+            <figcaption id="case-figure-caption-berribot-1" className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 1 · Search & Match and BerriTutor (highlighted) are the two systems I worked on directly.</figcaption>
           </figure>
           <p className="eyebrow" data-reveal="1" style={css("margin:56px 0 0")}>Ownership</p>
           <div style={css("margin-top:16px")}>
@@ -118,9 +119,9 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
           </div>
           <h3 className="h3" data-reveal="1" style={css("margin:72px 0 0")}>Multi-stage ranking pipeline</h3>
           <p className="p light" data-reveal="1" style={css("margin:6px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>One input feeds two retrieval paths, which fuse before the expensive stages.</p>
-          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")}>
+          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")} aria-labelledby="case-figure-caption-berribot-2">
             <div style={css("border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px;overflow-x:auto")}><div data-mmd="ranking" style={css("min-width:560px")}></div></div>
-            <figcaption className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 2 · Retrieve broadly, then spend expensive scoring on a reduced set.</figcaption>
+            <figcaption id="case-figure-caption-berribot-2" className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 2 · Retrieve broadly, then spend expensive scoring on a reduced set.</figcaption>
           </figure>
           <div style={css("margin-top:32px")}>
             <div data-r="thead" className="p" style={css("display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(0,2.4fr) minmax(0,2.4fr);gap:24px;align-items:start;padding:0 0 14px;border-bottom:1px solid var(--foreground)")}>
@@ -140,9 +141,9 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
           </div>
           <h3 className="h3" data-reveal="1" style={css("margin:72px 0 0")}>Candidate intelligence</h3>
           <p className="p light" data-reveal="1" style={css("margin:6px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>From raw resume to a canonical profile the ranker can use.</p>
-          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")}>
+          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")} aria-labelledby="case-figure-caption-berribot-3">
             <div style={css("border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px;overflow-x:auto")}><div data-mmd="candidate" style={css("min-width:560px")}></div></div>
-            <figcaption className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 3 · Resume parsing and taxonomy.</figcaption>
+            <figcaption id="case-figure-caption-berribot-3" className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 3 · Resume parsing and taxonomy.</figcaption>
           </figure>
         </section>
         <section id="tutor" data-sec="1" data-r="sec" style={css("position:relative;padding-left:35px;margin-top:112px")}>
@@ -150,9 +151,9 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
           <p className="eyebrow" data-reveal="1" style={css("margin:0")}>[3] BerriTutor</p>
           <h2 className="h2" data-reveal="1" style={css("margin:12px 0 0;max-width:var(--measure);text-wrap:balance")}>Building BerriTutor</h2>
           <p className="p light" data-reveal="1" style={css("margin:12px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>Real-time personalized voice tutoring. I started it and led core development.</p>
-          <figure data-reveal="1" data-fig="1" style={css("margin:32px 0 0")}>
+          <figure data-reveal="1" data-fig="1" style={css("margin:32px 0 0")} aria-labelledby="case-figure-caption-berribot-4">
             <div style={css("border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px;overflow-x:auto")}><div data-mmd="tutor" style={css("min-width:560px")}></div></div>
-            <figcaption className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 4 · Runtime architecture for low-latency WebRTC conversations, shown at a high level to protect proprietary implementation details.</figcaption>
+            <figcaption id="case-figure-caption-berribot-4" className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 4 · Runtime architecture for low-latency WebRTC conversations, shown at a high level to protect proprietary implementation details.</figcaption>
           </figure>
           <div style={css("margin-top:32px")}>
             <div data-r="thead" className="p" style={css("display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,3fr) 120px;gap:24px;align-items:start;padding:0 0 14px;border-bottom:1px solid var(--foreground)")}>
@@ -178,15 +179,15 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
           <p className="p light" data-reveal="1" style={css("margin:12px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>What made it production-ready: evaluation, integrity automation, delivery and reliability.</p>
           <h3 className="h3" data-reveal="1" style={css("margin:48px 0 0")}>LLM evaluation system</h3>
           <p className="p light" data-reveal="1" style={css("margin:6px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}>A regression loop that stays repeatable as prompts, models and behavior change.</p>
-          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")}>
+          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")} aria-labelledby="case-figure-caption-berribot-5">
             <div style={css("border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px;overflow-x:auto")}><div data-mmd="evals" style={css("min-width:560px")}></div></div>
-            <figcaption className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 5 · Release the change, or inspect the trace.</figcaption>
+            <figcaption id="case-figure-caption-berribot-5" className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 5 · Release the change, or inspect the trace.</figcaption>
           </figure>
           <h3 className="h3" data-reveal="1" style={css("margin:72px 0 0")}>Production delivery</h3>
-          <p className="p light" data-reveal="1" style={css("margin:6px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}><a href="https://www.docker.com" target="_blank" rel="noopener" style={css("text-decoration-color:var(--clay)")}>Dockerized</a> services running on <a href="https://cloud.google.com" target="_blank" rel="noopener" style={css("text-decoration-color:var(--clay)")}>GCP</a>.</p>
-          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")}>
+          <p className="p light" data-reveal="1" style={css("margin:6px 0 0;max-width:var(--measure);color:var(--muted-foreground)")}><a href="https://www.docker.com" target="_blank" rel="noopener noreferrer" style={css("text-decoration-color:var(--clay)")}>Dockerized</a> services running on <a href="https://cloud.google.com" target="_blank" rel="noopener noreferrer" style={css("text-decoration-color:var(--clay)")}>GCP</a>.</p>
+          <figure data-reveal="1" data-fig="1" style={css("margin:24px 0 0")} aria-labelledby="case-figure-caption-berribot-6">
             <div style={css("border:1px solid var(--border);border-radius:6px;background:var(--card);padding:24px 16px;overflow-x:auto")}><div data-mmd="delivery" style={css("min-width:560px")}></div></div>
-            <figcaption className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 6 · From commit to GKE / Cloud Run.</figcaption>
+            <figcaption id="case-figure-caption-berribot-6" className="p-sm light" style={css("margin-top:10px;color:var(--muted-foreground)")}>Fig. 6 · From commit to GKE / Cloud Run.</figcaption>
           </figure>
           <div style={css("margin-top:32px;border-top:1px solid var(--foreground)")}>
             {(D.opItems || []).map((d, $i6) => (
@@ -254,9 +255,9 @@ export default function BerribotArticle({ toc, goCases }: { toc: ReactNode; goCa
         <div className="p light" data-reveal="1" style={css("display:flex;flex-wrap:wrap;gap:16px;margin-top:20px")}>
           <a href="mailto:sv.tharunpranav@gmail.com" style={css("text-decoration-color:var(--clay)")}>Email</a>
           {' '}
-          <a href="https://www.linkedin.com/in/thrn" target="_blank" rel="noopener" style={css("text-decoration-color:var(--clay)")}>LinkedIn</a>
+          <a href="https://www.linkedin.com/in/thrn" target="_blank" rel="noopener noreferrer" style={css("text-decoration-color:var(--clay)")}>LinkedIn</a>
           {' '}
-          <a href="https://github.com/thrns" target="_blank" rel="noopener" style={css("text-decoration-color:var(--clay)")}>GitHub</a>
+          <a href="https://github.com/thrns" target="_blank" rel="noopener noreferrer" style={css("text-decoration-color:var(--clay)")}>GitHub</a>
         </div>
       </section>
     </article>

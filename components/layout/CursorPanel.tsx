@@ -1,26 +1,34 @@
 'use client';
 import React from 'react';
+import { useRef } from 'react';
 import { css } from '@/lib/css';
 import { Button, IconButton, Icon, Switch } from '@/components/ui';
 import { Tag } from '@/components/common/Tag';
 import { DEFAULT_MO, MOMENTS, hide, dropTf } from '@/lib/chrome';
 import { useChrome } from './ChromeContext';
+import { usePresence } from './usePresence';
+import { useDialogFocus } from './useDialogFocus';
 
 /** Cursor settings popover, anchored under the header actions. */
 export default function CursorPanel() {
   const { s, setState, saveCur } = useChrome();
+  const { mounted, visible } = usePresence(s.curOpen, 200);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const focus = useDialogFocus(visible, panelRef, () => setState({ curOpen: false }), false, undefined, '[aria-label="More"]');
+  if (!mounted) return null;
+
   return (
             <span data-r="cur" style={css('display:contents')}>
-              <div role="dialog" aria-label="Cursor" style={{ ...css('position:absolute;top:calc(100% + 10px);right:0;width:340px;max-width:calc(100vw - 2 * var(--page-gutter));max-height:calc(100vh - 90px);overflow-y:auto;box-sizing:border-box;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.12);z-index:60;transition:opacity var(--dur-fade) var(--ease), transform var(--dur-fade) var(--ease)'), ...hide(s.curOpen), transform: dropTf(s.curOpen) } as any}>
+              <div id="cursor-settings" ref={panelRef} role="dialog" aria-labelledby="cursor-dialog-title" aria-describedby="cursor-dialog-description" aria-hidden={!visible} inert={!visible} tabIndex={-1} onKeyDown={focus.onKeyDown} style={{ ...css('position:absolute;top:calc(100% + 10px);right:0;width:340px;max-width:calc(100vw - 2 * var(--page-gutter));max-height:calc(100vh - 90px);overflow-y:auto;box-sizing:border-box;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.12);z-index:60;transition:opacity var(--dur) var(--ease), transform var(--dur) var(--ease)'), ...hide(visible), transform: dropTf(visible) } as any}>
                 <div style={css('display:flex;align-items:center;justify-content:space-between')}>
-                  <h2 style={css('margin:0;font-size:20px;line-height:28px;font-weight:600;letter-spacing:-0.011em;color:var(--foreground)')}>Cursor</h2>
-                  <IconButton size="sm" aria-label="Close" onClick={() => setState({ curOpen: false })}><Icon name="LucideX" size={16} /></IconButton>
+                  <h2 id="cursor-dialog-title" style={css('margin:0;font-size:20px;line-height:28px;font-weight:600;letter-spacing:-0.011em;color:var(--foreground)')}>Cursor</h2>
+                  <IconButton size="sm" data-dialog-initial-focus="true" aria-label="Close cursor settings" onClick={() => setState({ curOpen: false })}><Icon name="LucideX" size={16} /></IconButton>
                 </div>
-                <p className="light" style={css('font-size:13px;line-height:19px;letter-spacing:-0.011em;margin:6px 0 0')}>A little personality. Just your amount.</p>
+                <p id="cursor-dialog-description" className="light" style={css('font-size:13px;line-height:19px;letter-spacing:-0.011em;margin:6px 0 0')}>A little personality. Just your amount.</p>
                 <div style={css('margin-top:16px;border-top:1px solid var(--foreground)')}></div>
                 <div style={css('display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px')}>
                   <Tag size="sm" hint="O">Custom cursor</Tag>
-                  <Switch checked={s.curOn} onChange={() => saveCur({ curOn: !s.curOn })} />
+                  <Switch checked={s.curOn} ariaLabel="Custom cursor" onChange={() => saveCur({ curOn: !s.curOn })} />
                 </div>
                 <div style={css('margin-top:20px;display:flex')}><Tag size="sm" hint="F">Shape</Tag></div>
                 <div style={css(`display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;opacity:${s.curOn ? 1 : 0.5};transition:opacity 200ms var(--ease)`)}>
@@ -37,7 +45,7 @@ export default function CursorPanel() {
                     <div key={id} style={css('display:flex;align-items:center;gap:12px;padding:5px 0')}>
                       <span aria-hidden="true" style={css('width:28px;height:22px;flex:none;color:var(--muted-foreground);display:inline-flex')} dangerouslySetInnerHTML={{ __html: '<svg width="28" height="22" viewBox="0 0 28 22">' + svg + '</svg>' }}></span>
                       <span className="light" style={css('font-size:13px;line-height:19px;letter-spacing:-0.011em;flex:1;color:var(--foreground)')}>{label}</span>
-                      <Switch checked={!!s.mo[id]} onChange={() => saveCur({ mo: { ...s.mo, [id]: !s.mo[id] } })} />
+                      <Switch checked={!!s.mo[id]} ariaLabel={label} onChange={() => saveCur({ mo: { ...s.mo, [id]: !s.mo[id] } })} />
                     </div>
                   ))}
                 </div>

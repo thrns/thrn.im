@@ -16,7 +16,7 @@ const linkify = (t) => {
   LINK_RX.lastIndex = 0;
   while ((m = LINK_RX.exec(t))) {
     if (m.index > last) out.push(t.slice(last, m.index));
-    out.push(React.createElement('a', { key: 'l' + n++, href: LINKS[m[1]], target: '_blank', rel: 'noopener', style: { textDecorationColor: 'var(--clay)' } }, m[1]));
+    out.push(React.createElement('a', { key: 'l' + n++, href: LINKS[m[1]], target: '_blank', rel: 'noopener noreferrer', style: { textDecorationColor: 'var(--clay)' } }, m[1]));
     last = m.index + m[1].length;
   }
   if (!out.length) return t;

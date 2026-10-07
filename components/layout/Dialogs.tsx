@@ -9,11 +9,11 @@ import { useChrome } from './ChromeContext';
 import { Modal, ModalHeader, ModalRow } from './Modal';
 
 export function EmailDialog() {
-  const { s, closeEmail, copyAddr } = useChrome();
+  const { s, closeEmail, copyAddr, dialogOpeners } = useChrome();
   return (
-    <Modal open={s.email} onClose={closeEmail} zIndex={56} label="Email" maxWidth={640} padding="32px 32px 28px" dataR="dlg">
+    <Modal open={s.email} onClose={closeEmail} zIndex={56} label="Email" titleId="email-dialog-title" descriptionId="email-dialog-description" opener={dialogOpeners.current.email} maxWidth={640} padding="32px 32px 28px" dataR="dlg">
       <ModalHeader
-        title="Email me" titleStyle="font-size:24px;line-height:32px"
+        title="Email me" titleId="email-dialog-title" descriptionId="email-dialog-description" titleStyle="font-size:24px;line-height:32px"
         subtitle={EMAIL} subtitleStyle="margin:10px 0 0;max-width:var(--measure)"
         closeLabel="Close email" onClose={closeEmail}
       />
@@ -53,11 +53,11 @@ function GuideColumn({ rows }: { rows: [string, string][] }) {
 }
 
 export function GuideDialog() {
-  const { s, closeGuide } = useChrome();
+  const { s, closeGuide, dialogOpeners } = useChrome();
   return (
-    <Modal open={s.guide} onClose={closeGuide} zIndex={55} label="Keyboard shortcuts" maxWidth={820} padding="40px 40px 36px">
+    <Modal open={s.guide} onClose={closeGuide} zIndex={55} label="Keyboard shortcuts" titleId="guide-dialog-title" descriptionId="guide-dialog-description" opener={dialogOpeners.current.guide} maxWidth={820} padding="40px 40px 36px">
       <ModalHeader
-        title="Guide for the lazy" titleStyle="font-size:28px;line-height:36px"
+        title="Guide for the lazy" titleId="guide-dialog-title" descriptionId="guide-dialog-description" titleStyle="font-size:28px;line-height:36px"
         subtitle={<>Less clicking. More wandering.<br />Press a letter from anywhere.</>} subtitleStyle="margin:12px 0 0;max-width:var(--measure);color:var(--muted-foreground)"
         closeLabel="Close guide" onClose={closeGuide}
       />

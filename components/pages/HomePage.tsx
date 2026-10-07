@@ -35,6 +35,7 @@ export default function HomePage() {
           <p className="p light" style={css(P)}>{linkedCopy(PROFILE.thirdSlatePocketlink, [['ThirdSlate', 'https://github.com/thrns/thirdslate'], ['Pocketlink', 'https://github.com/thrns/pocketlink']])}</p>
           <p className="p light" style={css(P)}>{linkedCopy(PROFILE.hyrAgroBot, [['Hyr', 'https://hyr.works/'], ['UBC AgroBot', 'https://ubcagrobot.com/']])}</p>
           <p className="p light" style={css(P)}>{PROFILE.research}</p>
+          <p className="p light" style={css(P)}>{PROFILE.researchInterest}</p>
           <p className="p light" style={css(P)}>{PROFILE.pastInterests}</p>
           <p className="p light" style={css(P)}>{linkedCopy(PROFILE.workLink, [['here', '/work']])}</p>
         </div>
