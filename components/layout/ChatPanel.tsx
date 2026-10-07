@@ -70,7 +70,7 @@ export default function ChatPanel() {
         <div style={css('flex:none;display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--border)')}>
           <BixxieMark size={32} />
           <div style={css('flex:1;min-width:0')}>
-            <h2 id="bixxie-dialog-title" style={css('margin:0;font-size:14px;line-height:20px;font-weight:500;letter-spacing:-.011em')}>Ask Bixxie</h2>
+            <h2 id="bixxie-dialog-title" style={css('margin:0;font-size:14px;line-height:20px;font-weight:500;letter-spacing:-.011em')}>Ask Bixxie<sup style={css('margin-left:3px;font-size:10px;line-height:0;font-weight:400;letter-spacing:0;color:var(--muted-foreground)')}>beta</sup></h2>
           </div>
           <Button variant="outline" size="sm" onClick={closeChat} aria-label="Close chat" data-dialog-initial-focus="true"><span style={css('display:inline-flex;align-items:center;gap:6px')}>Close<span data-r="kbd" style={css('display:inline-flex')}><Kbd>Esc</Kbd></span></span></Button>
         </div>
